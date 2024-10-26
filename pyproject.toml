@@ -1,0 +1,29 @@
+[project]
+name = "pepita_tools"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "imagecodecs>=2024.9.22",
+    "matplotlib>=3.9.2",
+    "opencv-python>=4.10.0.84",
+    "pandas>=2.2.3",
+    "pytest>=8.3.3",
+    "scikit-image>=0.18",
+    "scipy>=1.13.1",
+    "seaborn>=0.13.2",
+]
+
+[project.scripts]
+pepita = "pepita_tools.scripts.pepita_cli:pepita"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+#[tool.hatch.build]
+#include = [
+#    "pepita_tools/**",
+#    "pepita_tools/data/**"
+#]

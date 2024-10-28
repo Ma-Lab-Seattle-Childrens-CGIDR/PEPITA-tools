@@ -1,5 +1,12 @@
-from matplotlib import pyplot as plt
+"""
+Module for charting
+"""
+# Imports
+# Standard Library Imports
 import sys
+
+# External Imports
+from matplotlib import pyplot as plt
 
 data1 = [
     [
@@ -3187,15 +3194,3 @@ def boxplot():
 
     fig.subplots_adjust(hspace=0.5, wspace=0.5)
     plt.savefig("chart.png")
-
-
-if __name__ == "__main__":
-    if len(sys.argv) <= 1:
-        # raise TypeError('Invoke with arguments, i.e. the type of chart to generate and the data to use.')
-        raise TypeError("Invoke with arguments, i.e. the type of chart to generate.")
-
-    chart_type = sys.argv[1]
-
-    if chart_type == "boxplot":
-        # boxplot([int(x) for x in sys.argv[2:]])
-        boxplot()

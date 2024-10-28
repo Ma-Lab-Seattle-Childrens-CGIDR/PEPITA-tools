@@ -16,7 +16,7 @@ import warnings
 import numpy as np
 
 # Local Imports
-from .. import analyze, absolute, keyence
+from .. import analyze, absolute, chart, keyence, imageops
 
 DEFAULT_CONFIG = """
 [Main]
@@ -216,11 +216,33 @@ def keyence_command(args):
         metadata = keyence.extract_metadata(filename)
         print(filename, json.dumps(metadata, indent=2))
 
+def imageops_command(args):
+    for bf_filename in args.imagefiles:
+        fl_filename = bf_filename.replace("CH4", "CH1")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            bf_img = imageops.read(bf_filename, np.uint16)
+            fl_img = None if not args.particles else imageops.read(fl_filename, np.uint16, 1)
+        imageops.get_fish_mask(
+            bf_img,
+            fl_img,
+            particles=args.particles,
+            silent=args.debug < 1,
+            verbose=args.debug > 1,
+            v_file_prefix="imageops",
+            mask_filename=bf_filename.replace("CH4", "mask"),
+        )
+
+def chart_command(args):
+    if args.chart_type == "boxplot":
+        # boxplot([int(x) for x in sys.argv[2:]])
+        chart.boxplot()
 
 # endregion subcommands
 
 
 def create_parser():
+    # region toplevel parser
     top_parser = argparse.ArgumentParser(prog="PEPITA-tools")
     top_parser.add_argument(
         "--config",
@@ -230,7 +252,9 @@ def create_parser():
         "directory",
     )
     subparsers = top_parser.add_subparsers(help="subcommand help", required=True)
+    # endregion toplevel parser
 
+    # region config-file parser
     # Create the parse for the "config-file" command
     config_file_parser = subparsers.add_parser(
         "config-file", help="create a default config file"
@@ -244,7 +268,9 @@ def create_parser():
         help="Directory to place default config file, current directory is used if not provided",
     )
     config_file_parser.set_defaults(func=config_file_command)
+    # endregion config-file parser
 
+    # region absolute parser
     # Create the parser for the absolute script
     absolute_parser = subparsers.add_parser(
         "absolute",
@@ -254,7 +280,9 @@ def create_parser():
     )
     set_arguments(absolute_parser)
     absolute_parser.set_defaults(func=absolute_command)
+    # endregion absolute parser
 
+    # region analyze parser
     # Create the parser for the Analyze Script
     analyze_parser = subparsers.add_parser(
         "analyze",
@@ -264,7 +292,9 @@ def create_parser():
     )
     set_arguments(analyze_parser)
     analyze_parser.set_defaults(func=analyze_command)
+    # endregion analyze parser
 
+    # region keyence
     # Create the Parser for the keyence script
     keyence_parser = subparsers.add_parser(
         "keyence", help="Print the metadata from keyence files"
@@ -273,6 +303,54 @@ def create_parser():
         "filenames", nargs="+", help="Files to get metadata from"
     )
     keyence_parser.set_defaults(func=keyence_command)
+
+    # Create the parser for the imageops command
+    imageops_parser = subparsers.add_parser(
+        "imageops", help = "Utility for operating on images of whole zebrafish with stained neuromasts, "
+            "for the purposes of measuring hair cell damage."
+    )
+    imageops_parser.add_argument(
+        "imagefiles",
+        nargs="+",
+        help="The absolute or relative filenames where the relevant images can be found.",
+    )
+    imageops_parser.add_argument(
+        "-p",
+        "--particles",
+        action="store_true",
+        help=(
+            "If present, the resulting mask will obscure everything except the bright particles "
+            "on the fish in the given images. Otherwise the whole fish will be shown."
+        ),
+    )
+    imageops_parser.add_argument(
+        "-d",
+        "--debug",
+        action="count",
+        default=1,
+        help=(
+            "Indicates intermediate processing images should be output for troubleshooting "
+            "purposes. Including this argument once will yield one intermediate image per input "
+            "file, twice will yield several intermediate images per input file."
+        ),
+    )
+    imageops_parser.set_defaults(func=imageops_command)
+    # endregion keyence
+
+    # region chart parser
+    # Create the parser for the chart subcommand
+    chart_parser = subparsers.add_parser(
+        "chart", help = "Create a boxplot"
+    )
+    chart_parser.add_argument("chart_type", required=True, type=str,
+                              help="Desired type of chart e.g boxplot")
+    chart_parser.set_defaults(func=chart_command)
+    # endregion chart parser
+
+    # region dose_response parser
+    # Create the parser for the dose_response script
+    
+    # endregion dose_response parser
 
     return top_parser
 

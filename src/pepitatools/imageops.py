@@ -124,7 +124,7 @@ def get_fish_mask(
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             mask_img = read(mask_filename, np.uint8)
-            show(mask_img, config, verbose, v_file_prefix=v_file_prefix)
+            show(mask_img, config=config, verbose=verbose, v_file_prefix=v_file_prefix)
 
         if particles:
             steps = (
@@ -207,7 +207,7 @@ def get_size_mask(
         ),
         lambda img_i: erode(img_i, size=4, iterations=erosions),
     )
-    return _get_mask(img, steps, config, verbose, v_file_prefix=v_file_prefix)
+    return _get_mask(img, steps, config=config, verbose=verbose, v_file_prefix=v_file_prefix)
 
 
 def invert(img):
@@ -287,8 +287,7 @@ def setup_imageops_logdir(config):
                     "problem."
                 )
             ) from ose
-    else:
-        return log_dir
+    return log_dir
 
 
 def show(img, config, verbose=True, v_file_prefix=""):

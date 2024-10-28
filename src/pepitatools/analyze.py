@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Local Imports
-# from . import imageops
+from . import imageops
 from . import keyence
 from . import utils
 

@@ -19,7 +19,7 @@ from skimage import feature
 
 
 # Local Imports
-from . import utils
+from .configuration import Configuration
 
 
 def apply_mask(img, mask):  # mask should have black background, white foreground
@@ -88,7 +88,6 @@ def get_contours_by_area(img, threshold=-1, lower=0, upper=2**32):
 def get_fish_mask(
     bf_img,
     fl_img,
-    config,
     particles=True,
     silent=True,
     verbose=False,
@@ -100,13 +99,11 @@ def get_fish_mask(
         subtr_img = []
     show(
         bf_img,
-        config=config,
         verbose=verbose or not silent,
         v_file_prefix=v_file_prefix,
     )
     show(
         fl_img,
-        config=config,
         verbose=verbose or not silent,
         v_file_prefix=v_file_prefix,
     )
@@ -115,7 +112,6 @@ def get_fish_mask(
         fl_img = subtract(fl_img, subtr_img, scale=True)
         show(
             fl_img,
-            config=config,
             verbose=verbose or not silent,
             v_file_prefix=v_file_prefix,
         )
@@ -124,7 +120,7 @@ def get_fish_mask(
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             mask_img = read(mask_filename, np.uint8)
-            show(mask_img, config=config, verbose=verbose, v_file_prefix=v_file_prefix)
+            show(mask_img, verbose=verbose, v_file_prefix=v_file_prefix)
 
         if particles:
             steps = (
@@ -143,7 +139,6 @@ def get_fish_mask(
                 img_i,
                 get_size_mask(
                     bf_img,
-                    config=config,
                     erosions=10,
                     threshold=2**12,
                     lower=2**15,
@@ -155,7 +150,6 @@ def get_fish_mask(
             lambda img_i: dilate(img_i, size=5, iterations=6),
             lambda img_i: get_size_mask(
                 img_i,
-                config=config,
                 erosions=4,
                 threshold=-1,
                 lower=2**15,
@@ -175,11 +169,10 @@ def get_fish_mask(
             )
 
     mask = _get_mask(
-        bf_img, steps, config=config, verbose=verbose, v_file_prefix=v_file_prefix
+        bf_img, steps,  verbose=verbose, v_file_prefix=v_file_prefix
     )
     show(
         apply_mask(fl_img, mask),
-        config=config,
         verbose=not verbose and not silent,
         v_file_prefix=v_file_prefix,
     )
@@ -188,7 +181,6 @@ def get_fish_mask(
 
 def get_size_mask(
     img,
-    config,
     erosions=0,
     threshold=2**7,
     lower=0,
@@ -207,7 +199,7 @@ def get_size_mask(
         ),
         lambda img_i: erode(img_i, size=4, iterations=erosions),
     )
-    return _get_mask(img, steps, config=config, verbose=verbose, v_file_prefix=v_file_prefix)
+    return _get_mask(img, steps, verbose=verbose, v_file_prefix=v_file_prefix)
 
 
 def invert(img):
@@ -263,8 +255,8 @@ def score(img, count=10, radius=8, threshold_pct=0.05):
     return total
 
 
-def setup_imageops_logdir(config):
-    base_log_dir = utils.get_config_setting(config, "log_dir")
+def setup_imageops_logdir():
+    base_log_dir = Configuration().log_dir
     if base_log_dir == "/path/to/log/dir":
         raise ValueError(
             (
@@ -290,9 +282,9 @@ def setup_imageops_logdir(config):
     return log_dir
 
 
-def show(img, config, verbose=True, v_file_prefix=""):
+def show(img, verbose=True, v_file_prefix=""):
     if verbose:
-        log_dir = setup_imageops_logdir(config)
+        log_dir = setup_imageops_logdir()
         unique_str = str(int(time() * 1000) % 1_620_000_000_000)
         filename = f"{log_dir}/{v_file_prefix}_{unique_str}.png"
         imageio.imwrite(filename, resize(img, 0.5))
@@ -340,12 +332,12 @@ def _get_local_maxima(img, count=10, spacing=5, threshold_rel=0.1):
     )
 
 
-def _get_mask(img, steps, config, verbose=False, v_file_prefix=""):
+def _get_mask(img, steps, verbose=False, v_file_prefix=""):
     img_i = img
     for step in steps:
         img_i = step(img_i)
-        show(img_i, config, verbose, v_file_prefix=v_file_prefix)
-    show(apply_mask(img, img_i), config, verbose, v_file_prefix=v_file_prefix)
+        show(img_i, verbose, v_file_prefix=v_file_prefix)
+    show(apply_mask(img, img_i), verbose, v_file_prefix=v_file_prefix)
     return img_i
 
 

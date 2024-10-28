@@ -20,13 +20,13 @@ import seaborn as sns
 
 # Local Imports
 from . import utils
+from .configuration import Configuration
 
 _neo_model=None
 
 class Model:
-    def __init__(self, xs, ys, cocktail, config, E_0=100, E_max=None):
+    def __init__(self, xs, ys, cocktail, E_0=100, E_max=None):
         self.cocktail = cocktail
-        self.config = config
         self.combo = len(cocktail.drugs) > 1
         self.xs = xs
         self.ys = ys
@@ -136,7 +136,7 @@ class Model:
 
         if close:
             # Get log dir
-            base_log_dir = utils.get_config_setting(self.config, "log_dir")
+            base_log_dir = Configuration().log_dir
             plt.tight_layout()
             uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
             if not name:
@@ -242,7 +242,6 @@ def analyze_checkerboard(
     model_a,
     model_b,
     models_combo,
-    config,
     method="interpolation",
     file_name_context=None,
     effect_level=0.5,
@@ -393,7 +392,7 @@ def analyze_checkerboard(
         plt.tight_layout()
         uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
         # get log dir
-        base_log_dir = utils.get_config_setting(config, "log_dir")
+        base_log_dir = Configuration().log_dir
         plt.savefig(
             os.path.join(
                 base_log_dir,
@@ -476,7 +475,7 @@ def analyze_checkerboard(
         plt.tight_layout()
         uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
         # Get log dir
-        base_log_dir = utils.get_config_setting(config, "log_dir")
+        base_log_dir = Configuration().log_dir
         plt.savefig(
             f"{base_log_dir}/{model_a.get_condition()}-{model_b.get_condition()}_{file_name_context2}"
             + f"bliss_{uniq_str}.png"
@@ -490,7 +489,7 @@ def analyze_checkerboard(
         )
 
 
-def analyze_diamond(model_a, model_b, model_combo, config):
+def analyze_diamond(model_a, model_b, model_combo):
     if model_a.c is None or model_b.c is None:
         print("Cannot analyze diamond due to failed dose-response curve fit")
         return None, 0, 0
@@ -655,7 +654,7 @@ def analyze_diamond(model_a, model_b, model_combo, config):
 
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
     # Get log dir
-    base_log_dir = utils.get_config_setting(config, "log_dir")
+    base_log_dir = Configuration().log_dir
     return (
         os.path.join(
             base_log_dir, f"{model_a.cocktail}+{model_b.cocktail}_isoboles_{uniq_str}.png"
@@ -665,7 +664,7 @@ def analyze_diamond(model_a, model_b, model_combo, config):
     )
 
 
-def chart_checkerboard(model_a, model_b, models_combo, config, file_name_context=None):
+def chart_checkerboard(model_a, model_b, models_combo, file_name_context=None):
     file_name_context1 = ""
     file_name_context2 = ""
     if file_name_context:
@@ -729,7 +728,7 @@ def chart_checkerboard(model_a, model_b, models_combo, config, file_name_context
     )
     plt.tight_layout()
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
-    base_log_dir = utils.get_config_setting(config, "log_dir")
+    base_log_dir = Configuration().log_dir
     plt.savefig(
         f"{base_log_dir}/{model_a.get_condition()}-{model_b.get_condition()}_{file_name_context2}"
         + f"checkerboard_{uniq_str}.png"
@@ -737,7 +736,7 @@ def chart_checkerboard(model_a, model_b, models_combo, config, file_name_context
     plt.clf()
 
 
-def chart_diamond(model_a, model_b, model_combo, config):
+def chart_diamond(model_a, model_b, model_combo):
     if model_a.c is None or model_b.c is None:
         print("Cannot chart diamond due to failed dose-response curve fit")
         return
@@ -793,7 +792,7 @@ def chart_diamond(model_a, model_b, model_combo, config):
     plt.tight_layout()
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
     # Get log directory
-    base_log_dir = utils.get_config_setting(config, "log_dir")
+    base_log_dir = Configuration().log_dir
     plt.savefig(
         f"{base_log_dir}/combo_{model_a.get_condition()}-{model_b.get_condition()}_model_{uniq_str}.png"
     )
@@ -1019,7 +1018,6 @@ def plot_func(
     func,
     label,
     filename_prefix,
-    config,
     x_label=None,
     close=True,
     color="darkgrey",
@@ -1054,7 +1052,7 @@ def plot_func(
     plt.legend()
     if close:
         # Get log dir from config
-        base_log_dir = utils.get_config_setting(config, "log_dir")
+        base_log_dir = Configuration().log_dir
         plt.tight_layout()
         uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
         plt.savefig(os.path.join(base_log_dir, f"{filename_prefix}_{uniq_str}.png"))

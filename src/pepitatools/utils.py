@@ -19,6 +19,7 @@ from typing import Union, Optional
 import numpy as np
 
 # Local Imports
+from .configuration import Configuration
 
 CONFIG_SECTION = "Main"
 
@@ -249,21 +250,29 @@ def geometric_mean(array):
 # 	return _config[_section].get(setting, fallback)
 
 
-def read_config(config_file: Union[str, os.PathLike]) -> configparser.ConfigParser:
-    config = configparser.ConfigParser()
-    config.read(config_file)
-    return config
+def read_config(config_file: Union[str, os.PathLike]) -> None:
+    parsed_config = configparser.ConfigParser()
+    parsed_config.read(config_file)
 
+    # Set up the global configuration object
+    config = Configuration()
 
-def get_config_setting(
-    config: configparser.ConfigParser, setting: str, fallback: Optional[str] = None
-):
-    return config[CONFIG_SECTION].get(setting, fallback)
-
-
-def get_here():
-    script = sys.argv[0] if __name__ == "__main__" else __file__
-    return os.path.dirname(os.path.realpath(script))
+    config.absolute_max_infection = parsed_config[CONFIG_SECTION]["absolute_max_infection"]
+    config.absolute_min_infection = parsed_config[CONFIG_SECTION]["absolute_min_infection"]
+    config.absolute_max_ototox = parsed_config[CONFIG_SECTION]["absolute_max_ototox"]
+    config.absolute_min_ototox = parsed_config[CONFIG_SECTION]["absolute_min_ototox"]
+    config.channel_main_ototox = parsed_config[CONFIG_SECTION]["channel_main_ototox"]
+    config.channel_main_infection = parsed_config[CONFIG_SECTION]["channel_main_infection"]
+    config.channel_subtr_ototox = parsed_config[CONFIG_SECTION]["channel_subtr_ototox"]
+    config.channel_subtr_infection = parsed_config[CONFIG_SECTION]["channel_subtr_infection"]
+    config.filename_replacement_delimiter = parsed_config[CONFIG_SECTION]["filename_replacement_delimiter"]
+    config.filename_replacement_brightfield_infection = parsed_config[CONFIG_SECTION]["filename_replacement_brightfield_infection"]
+    config.filename_replacement_brightfield_ototox = parsed_config[CONFIG_SECTION]["filename_replacement_brightfield_ototox"]
+    config.filename_replacement_mask_infection = parsed_config[CONFIG_SECTION]["filename_replacement_mask_infection"]
+    config.filename_replacement_mask_ototox = parsed_config[CONFIG_SECTION]["filename_replacement_mask_ototox"]
+    config.filename_replacement_subtr_infection = parsed_config[CONFIG_SECTION]["filename_replacement_subtr_infection"]
+    config.filename_replacement_subtr_ototox = parsed_config[CONFIG_SECTION]["filename_replacement_subtr_ototox"]
+    config.log_dir = parsed_config[CONFIG_SECTION]["log_dir"]
 
 
 def get_inputs_hashfile(log_dir: Union[str, os.PathLike], **kwargs):

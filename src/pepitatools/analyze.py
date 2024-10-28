@@ -21,6 +21,7 @@ import seaborn as sns
 from . import imageops
 from . import keyence
 from . import utils
+from .configuration import Configuration
 
 # for windows consoles (e.g. git bash) to work properly
 try:
@@ -35,28 +36,17 @@ class Image:
         self,
         filename,
         group,
-        config: configparser.ConfigParser,
         debug=0,
     ):
         # Get values from config
-        self.channel = int(utils.get_config_setting(config, "channel_main_ototox"))
-        self.channel_subtr = int(
-            utils.get_config_setting(config, "channel_subtr_ototox")
-        )
+        config = Configuration()
+        self.channel = int(config.channel_main_ototox)
+        self.channel_subtr = int(config.channel_subtr_ototox)
         self.particles = True
-        self.replacement_delim = utils.get_config_setting(
-            config, "filename_replacement_delimiter"
-        )
-        self.replacement_brfld = utils.get_config_setting(
-            config, "filename_replacement_brightfield_ototox"
-        ).split(self.replacement_delim)
-        self.replacement_mask = utils.get_config_setting(
-            config, "filename_replacement_mask_ototox"
-        ).split(self.replacement_delim)
-        self.replacement_subtr = utils.get_config_setting(
-            config, "filename_replacement_subtr_ototox"
-        ).split(self.replacement_delim)
-
+        self.replacement_delim = config.filename_replacement_delimiter
+        self.replacement_brfld = config.filename_replacement_brightfield_ototox.split(self.replacement_delim)
+        self.replacement_mask = config.filename_replacement_mask_ototox.split(self.replacement_delim)
+        self.replacement_subtr = config.filename_replacement_subtr_ototox.split(self.replacement_delim)
         self.fl_filename = filename
         self.bf_filename = filename.replace(
             self.replacement_brfld[0], self.replacement_brfld[1]

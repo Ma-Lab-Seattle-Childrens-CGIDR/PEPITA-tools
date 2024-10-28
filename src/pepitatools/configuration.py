@@ -10,9 +10,9 @@ Provide global configuration
 
 __all__ = ["Configuration"]
 
-# Create a singleton metaclass Based on COBRApy, licensed under GPLv3
+# Create a singleton metaclass
 class Singleton(type):
-    """Implementation of the singleton pattern as a metaclass."""
+    """Implementation of singleton as a metaclass"""
 
     _instances = {}
 

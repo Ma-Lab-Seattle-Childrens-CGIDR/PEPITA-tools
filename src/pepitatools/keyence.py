@@ -23,7 +23,7 @@ LENS_TABLE = "keyence_BZX800_lenses.csv"
 LENSES = {}
 
 with importlib.resources.path(
-    "pepita_tools.data", "keyence_BZX800_lenses.csv"
+    "pepitatools.data", "keyence_BZX800_lenses.csv"
 ) as data_file:
     with open(data_file, encoding="utf8", newline="", mode="r") as f:
         reader = csv.reader(f, delimiter="\t")

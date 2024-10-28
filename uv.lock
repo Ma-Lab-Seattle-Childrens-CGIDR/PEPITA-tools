@@ -557,12 +557,13 @@ wheels = [
 ]
 
 [[package]]
-name = "pepita-tools"
+name = "pepitatools"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "imagecodecs" },
     { name = "matplotlib" },
+    { name = "numpy" },
     { name = "opencv-python" },
     { name = "pandas" },
     { name = "pytest" },
@@ -575,6 +576,7 @@ dependencies = [
 requires-dist = [
     { name = "imagecodecs", specifier = ">=2024.9.22" },
     { name = "matplotlib", specifier = ">=3.9.2" },
+    { name = "numpy", specifier = ">=2.0.2" },
     { name = "opencv-python", specifier = ">=4.10.0.84" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pytest", specifier = ">=8.3.3" },

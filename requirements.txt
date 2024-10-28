@@ -1,7 +1,0 @@
-imagecodecs
-matplotlib
-opencv-python
-pandas
-scikit-image>=0.18
-scipy
-seaborn

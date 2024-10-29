@@ -5,18 +5,22 @@ Main CLI for pepita-tools
 # Imports
 # Standard library imports
 from __future__ import annotations
-
 import argparse
 import json
 import os
 import re
+import sys
+from time import time
 import warnings
 
 # External imports
+from matplotlib import pyplot as plt
 import numpy as np
 
+
 # Local Imports
-from .. import analyze, absolute, chart, keyence, imageops
+from .. import analyze, absolute, chart, dose_response, infection, keyence, imageops, utils
+from ..configuration import Configuration
 
 DEFAULT_CONFIG = """
 [Main]
@@ -238,6 +242,42 @@ def chart_command(args):
         # boxplot([int(x) for x in sys.argv[2:]])
         chart.boxplot()
 
+def dose_response_command(args):
+    if args.filename is None:
+        models = [dose_response._get_neo_model(debug=0)]
+    else:
+        models = [dose_response._get_model(f) for f in args.filename]
+    colors = ["#def", "#cdf", "#bcf", "#abf", "#9af", "#89f", "#78f"]
+
+    for i, model in enumerate(models):
+        print(model.cocktail)
+        ec_90 = model.effective_concentration(0.9)
+        ec_75 = model.effective_concentration(0.75)
+        ec_50 = model.effective_concentration(0.5)
+
+        print(f"E_max: {model.get_absolute_E_max()} score")
+        print(f"EC_90: {ec_90} μM")
+        print(f"ec_75: {ec_75} μM")
+        print(f"ec_50: {ec_50} μM")
+
+        model.chart(close=False, color=colors[i])
+
+    plt.xlabel(f"{models[0].get_condition()} Dose (μM)")
+    plt.ylabel("Pipeline Score")
+
+    uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
+    plt.savefig(os.path.join(Configuration().log_dir, f"{models[0].get_condition()}_{uniq_str}.png"))
+    plt.close()
+    plt.clf()
+
+def infection_command(args):
+    args_dict = vars(args)
+    try:
+        infection.main(**args_dict)
+    except analyze.UserError as ue:
+        print("Error:", ue)
+        sys.exit(1)
+
 # endregion subcommands
 
 
@@ -246,6 +286,7 @@ def create_parser():
     top_parser = argparse.ArgumentParser(prog="PEPITA-tools")
     top_parser.add_argument(
         "--config",
+        dest="config",
         required=False,
         default="./config.ini",
         help="Path to config file, if not provided will look for config.ini in current"
@@ -349,13 +390,110 @@ def create_parser():
 
     # region dose_response parser
     # Create the parser for the dose_response script
+    dose_response_parser = subparsers.add_parser(
+        name="dose_response",
+        help="Evaluate the dose response for models in filenames"
+    )
+    dose_response_parser.add_argument("filename", nargs="*", default=None,
+                                      help="filenames containing dose response models")
+    dose_response_parser.set_defaults(func=dose_response_command)
+
     
     # endregion dose_response parser
+
+    # region infection parser
+    infection_parser = subparsers.add_parser(
+        name="infection",
+        help=(
+            "Analyzer for images of whole zebrafish with stained neuromasts, for the "
+            "purposes of measuring hair cell damage under drug-combination conditions. Reports "
+            "values relative to control."
+        )
+    )
+
+    infection_parser.add_argument(
+        "-cb",
+        "--checkerboard",
+        action="store_true",
+        help=(
+            "If present, the input will be treated as a checkerboard assay, with output produced "
+            "accordingly."
+        ),
+    )
+
+    infection_parser.add_argument(
+        "-cv",
+        "--conversions",
+        default=[],
+        nargs="*",
+        type=infection._key_value_pair,
+        help=(
+            "List of conversions between dose concentration labels and concrete values, each as "
+            "a separate argument, each delimited by an equals sign. For instance, ABC50 might be "
+            "an abbreviation for the EC50 of drug ABC, in which case the concrete concentration "
+            'can be supplied like "ABC50=ABC 1mM" (make sure to quote, or escape spaces).'
+        ),
+    )
+
+    infection_parser.add_argument(
+        "-ppc",
+        "--plate-positive-control",
+        default=[],
+        nargs="*",
+        help=(
+            "Labels to treat as the positive control conditions in the plate schematic (i.e. "
+            "conditions showing maximum effect). These wells are used to normalize all values in "
+            "the plate for more interpretable results. Any number of values may be passed."
+        ),
+    )
+
+    infection_parser.add_argument(
+        "--plate-info",
+        default=None,
+        help=(
+            "Any information identifying the plate(s) being analyzed that should be passed along "
+            "to files created by this process."
+        ),
+    )
+
+    infection_parser.add_argument(
+        "-tp",
+        "--treatment-platefile",
+        help="CSV file containing a schematic of the plate in which the imaged fish were treated. "
+             "Used to chart responses by treatment location, if desired. Row and column headers are "
+             "optional. The cell values are essentially just arbitrary labels: results will be "
+             "grouped and charted according to the supplied values.",
+    )
+
+    infection_parser.add_argument(
+        "--absolute-chart",
+        action="store_true",
+        help=(
+            "If present, a plate graphic will be generated with absolute (rather than relative) "
+            "brightness values."
+        ),
+    )
+
+    infection_parser.add_argument(
+        "--talk",
+        action="store_true",
+        help=('If present, images will be generated with the Seaborn "talk" context.'),
+    )
+    set_arguments(infection_parser)
+    utils.remove_arguments(infection_parser, "plate_ignore", "group_regex")
+    infection_parser.set_defaults(func=infection_command)
+
+    # endregion infection parser
 
     return top_parser
 
 
 def pepita():
+    # Create Parser
     parser = create_parser()
+    # Parse arguments from stdin
     args = parser.parse_args()
+    # Read the config file
+    utils.read_config(args.config)
+    # Call the desired subcommand
     args.func(args)

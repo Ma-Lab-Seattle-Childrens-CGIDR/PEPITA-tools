@@ -38,12 +38,12 @@ class Configuration(metaclass=Singleton):
         self.channel_subtr_ototox = 0
         self.channel_subtr_infection = 1
         self.filename_replacement_delimiter = "|"
-        self.filename_replacement_brightfield_infection = "CH2 | CH4"
-        self.filename_replacement_brightfield_ototox = "CH1 | CH4"
-        self.filename_replacement_mask_infection = "CH2 | mask"
-        self.filename_replacement_mask_ototox = "CH1 | mask"
-        self.filename_replacement_subtr_infection = "CH2 | CH1"
-        self.filename_replacement_subtr_ototox = "CH1 | CH2"
+        self.filename_replacement_brightfield_infection = "CH2|CH4"
+        self.filename_replacement_brightfield_ototox = "CH1|CH4"
+        self.filename_replacement_mask_infection = "CH2|mask"
+        self.filename_replacement_mask_ototox = "CH1|mask"
+        self.filename_replacement_subtr_infection = "CH2|CH1"
+        self.filename_replacement_subtr_ototox = "CH1|CH2"
         self.log_dir = "/path/to/log/dir"
 
     @property

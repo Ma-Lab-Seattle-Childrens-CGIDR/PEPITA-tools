@@ -247,3 +247,27 @@ def _calculate_control_values(images, plate_control):
         )
 
     return ctrl_vals
+
+def main(imagefiles, cap=-1, chartfile=None, debug=0, group_regex='.*', platefile=None,
+        plate_control=['B'], plate_ignore=[], silent=False):
+    results = {}
+
+    schematic = get_schematic(platefile, len(imagefiles), plate_ignore)
+    groups = list(dict.fromkeys(schematic))# deduplicated copy of `schematic`
+    images = quantify(imagefiles, plate_control, cap=cap, debug=debug, group_regex=group_regex,
+        schematic=schematic)
+
+    pattern = re.compile(group_regex)
+    for group in groups:
+        if group in plate_control or pattern.search(group):
+            relevant_values = [img.normalized_value for img in images if img.group == group]
+            results[group] = relevant_values
+            if not silent:
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore', RuntimeWarning)
+                    print(group, np.nanmedian(relevant_values), relevant_values)
+
+    if chartfile:
+        chart(results, chartfile)
+
+    return results

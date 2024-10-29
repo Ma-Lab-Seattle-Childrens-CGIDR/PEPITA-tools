@@ -1,30 +1,31 @@
+# Imports
+# Standard Library Imports
 import argparse
 import copy
 import json
 import math
-import numpy as np
 import os
-from matplotlib.ticker import PercentFormatter
-import matplotlib.pyplot as plt
 from pathlib import Path
 import re
-import seaborn as sns
 import sys
 from time import time
 import warnings
 
-import absolute
-import analyze
-import dose_response
-import interactions2
-import util
+# External Imports
+from matplotlib.ticker import PercentFormatter
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 
-LOG_DIR = f'{util.get_config("log_dir")}/dose_response'
-ABS_MAX = int(util.get_config("absolute_max_ototox"))
-ABS_MIN = int(util.get_config("absolute_min_ototox"))
+# Local Imports
+from . import absolute, analyze, dose_response, interactions2, utils
+from .configuration import Configuration
+
+LOG_DIR = f'{Configuration().log_dir}/dose_response'
+ABS_MAX = int(Configuration().absolute_max_ototox)
+ABS_MIN = int(Configuration().absolute_min_ototox)
 ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 NUMS = [str(n) for n in range(1, 99)]
-
 
 def adjust_absolute_filename(filename):
     filepath = Path(filename)
@@ -79,7 +80,7 @@ def generate_plate_schematic(
 
     for row_idx in range(height):
         for col_idx in range(len(schematic[row_idx])):
-            solution = util.Solution(schematic[row_idx][col_idx], conversions)
+            solution = utils.Solution(schematic[row_idx][col_idx], conversions)
             result = results[solution].pop(0)
             label = re.sub(
                 r"([A-Z])([A-Za-z])\w+\s?([\d./]+)?([A-Za-zμ ]+)?",
@@ -91,7 +92,7 @@ def generate_plate_schematic(
             annotations[row_idx, col_idx] = f"{result:{hmap_fmt}}\n{label}"
             responses[row_idx, col_idx] = result
 
-    plate_height = util.plate_height(well_count)
+    plate_height = utils.plate_height(well_count)
     plate_width = well_count // plate_height
 
     col_labels = NUMS[1 : plate_width - 1]
@@ -158,20 +159,28 @@ def main(
     cap=-1,
     chartfile=None,
     checkerboard=False,
-    conversions=[],
+    conversions=None,
     debug=0,
     group_regex=".*",
     platefile=None,
-    plate_control=["B"],
-    plate_ignore=[],
+    plate_control=None,
+    plate_ignore=None,
     plate_info=None,
-    plate_positive_control=[],
+    plate_positive_control=None,
     treatment_platefile=None,
     absolute_chart=False,
     silent=False,
     talk=False,
 ):
-    hashfile = util.get_inputs_hashfile(
+    if conversions is None:
+        conversions = []
+    if plate_control is None:
+        plate_control = ["B"]
+    if plate_ignore is None:
+        plate_ignore = []
+    if plate_positive_control is None:
+        plate_positive_control = []
+    hashfile = utils.get_inputs_hashfile(
         imagefiles=imagefiles,
         cap=cap,
         group_regex=group_regex,
@@ -202,7 +211,7 @@ def main(
             silent=False,
         )
         results2 = {
-            util.Solution(key, conversions): value for key, value in results2.items()
+            utils.Solution(key, conversions): value for key, value in results2.items()
         }
         generate_plate_schematic(
             schematic,
@@ -233,16 +242,16 @@ def main(
 
     drug_conditions = _parse_results(results, conversions)
     control_drugs = [
-        util.Cocktail(util.Dose(control).drug) for control in plate_control
+        utils.Cocktail(utils.Dose(control).drug) for control in plate_control
     ]
     models = {}
 
-    results = {util.Solution(key, conversions): value for key, value in results.items()}
+    results = {utils.Solution(key, conversions): value for key, value in results.items()}
 
     # positive control
 
     positive_control_solutions = [
-        util.Solution(positive_control, conversions)
+        utils.Solution(positive_control, conversions)
         for positive_control in plate_positive_control
     ]
     positive_control_scores = [
@@ -328,10 +337,10 @@ def main(
         ax.margins(0.006)
 
         for model_combo in models_combo:
-            subcocktail_a = util.Cocktail(model_combo.cocktail.drugs[0])
+            subcocktail_a = utils.Cocktail(model_combo.cocktail.drugs[0])
             if subcocktail_a not in models:
                 continue
-            subcocktail_b = util.Cocktail(model_combo.cocktail.drugs[1])
+            subcocktail_b = utils.Cocktail(model_combo.cocktail.drugs[1])
             model_a = models[subcocktail_a]
             model_b = models[subcocktail_b]
             plot_filename, max_x, max_y = dose_response.analyze_diamond(
@@ -356,8 +365,8 @@ def main(
 
         for pair in pairs:
             model_a, model_b = (
-                models[util.Cocktail(pair[0])],
-                models[util.Cocktail(pair[1])],
+                models[utils.Cocktail(pair[0])],
+                models[utils.Cocktail(pair[1])],
             )
 
             models_combo_relevant = [
@@ -460,103 +469,8 @@ def _key_value_pair(argument, delimiter="="):
 def _parse_results(results, conversions):
     drug_conditions = {}
     for condition in results:
-        solution = util.Solution(condition, conversions)
-        util.put_multimap(drug_conditions, solution.get_cocktail(), solution)
+        solution = utils.Solution(condition, conversions)
+        utils.put_multimap(drug_conditions, solution.get_cocktail(), solution)
     return drug_conditions
 
 
-#
-# main
-#
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description=(
-            "Analyzer for images of whole zebrafish with fluorescent neuromasts, for the "
-            "purposes of measuring hair cell damage under drug-combination conditions. Reports "
-            "values relative to control."
-        )
-    )
-
-    parser.add_argument(
-        "-cb",
-        "--checkerboard",
-        action="store_true",
-        help=(
-            "If present, the input will be treated as a checkerboard assay, with output produced "
-            "accordingly."
-        ),
-    )
-
-    parser.add_argument(
-        "-cv",
-        "--conversions",
-        default=[],
-        nargs="*",
-        type=_key_value_pair,
-        help=(
-            "List of conversions between dose concentration labels and concrete values, each as "
-            "a separate argument, each delimited by an equals sign. For instance, ABC50 might be "
-            "an abbreviation for the EC50 of drug ABC, in which case the concrete concentration "
-            'can be supplied like "ABC50=ABC 1mM" (make sure to quote, or escape spaces).'
-        ),
-    )
-
-    parser.add_argument(
-        "-ppc",
-        "--plate-positive-control",
-        default=[],
-        nargs="*",
-        help=(
-            "Labels to treat as the positive control conditions in the plate schematic (i.e. "
-            "conditions showing maximum effect). These wells are used to normalize all values in "
-            "the plate for more interpretable results. Any number of values may be passed."
-        ),
-    )
-
-    parser.add_argument(
-        "--plate-info",
-        default=None,
-        help=(
-            "Any information identifying the plate(s) being analyzed that should be passed along "
-            "to files created by this process."
-        ),
-    )
-
-    parser.add_argument(
-        "-tp",
-        "--treatment-platefile",
-        help="CSV file containing a schematic of the plate in which the imaged fish were treated. "
-        "Used to chart responses by treatment location, if desired. Row and column headers are "
-        "optional. The cell values are essentially just arbitrary labels: results will be "
-        "grouped and charted according to the supplied values.",
-    )
-
-    parser.add_argument(
-        "--absolute-chart",
-        action="store_true",
-        help=(
-            "If present, a plate graphic will be generated with absolute (rather than relative) "
-            "brightness values."
-        ),
-    )
-
-    parser.add_argument(
-        "--talk",
-        action="store_true",
-        help=(
-            'If present, images will be generated with the Seaborn "talk" context. Otherwise the '
-            'default "notebook" context will be used. (See '
-            "https://seaborn.pydata.org/generated/seaborn.set_context.html)"
-        ),
-    )
-
-    analyze.set_arguments(parser)
-
-    args = parser.parse_args(sys.argv[1:])
-    args_dict = vars(args)
-    try:
-        main(**args_dict)
-    except analyze.UserError as ue:
-        print("Error:", ue)
-        sys.exit(1)

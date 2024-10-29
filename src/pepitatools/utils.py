@@ -22,6 +22,7 @@ import numpy as np
 from .configuration import Configuration
 
 CONFIG_SECTION = "Main"
+CONFIG = Configuration()
 
 
 class Cocktail:
@@ -255,7 +256,7 @@ def read_config(config_file: Union[str, os.PathLike]) -> None:
     parsed_config.read(config_file)
 
     # Set up the global configuration object
-    config = Configuration()
+    config = CONFIG
 
     config.absolute_max_infection = parsed_config[CONFIG_SECTION]["absolute_max_infection"]
     config.absolute_min_infection = parsed_config[CONFIG_SECTION]["absolute_min_infection"]
@@ -275,13 +276,13 @@ def read_config(config_file: Union[str, os.PathLike]) -> None:
     config.log_dir = parsed_config[CONFIG_SECTION]["log_dir"]
 
 
-def get_inputs_hashfile(log_dir: Union[str, os.PathLike], **kwargs):
+def get_inputs_hashfile(**kwargs):
     sha1hash = hashlib.sha1()
     for value in kwargs.values():
         sha1hash.update(pickle.dumps(value))
     digest = base64.b32encode(sha1hash.digest()).decode("utf-8")
-    os.makedirs(os.path.join(log_dir, ".cache"), exist_ok=True)
-    return os.path.join(log_dir, ".cache", f".{digest}.json")
+    os.makedirs(os.path.join(CONFIG.log_dir, ".cache"), exist_ok=True)
+    return os.path.join(CONFIG.log_dir, ".cache", f".{digest}.json")
 
 
 def plate_height(well_count):

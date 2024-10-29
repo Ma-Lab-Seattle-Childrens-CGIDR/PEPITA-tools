@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 from time import time
 import warnings
@@ -19,7 +18,8 @@ import numpy as np
 
 
 # Local Imports
-from .. import analyze, absolute, chart, dose_response, infection, keyence, imageops, utils
+from .. import (analyze, absolute, chart, dose_response, imageops, infection,
+                keyence, pipeline, simulator, spreadsheet, utils)
 from ..configuration import Configuration
 
 DEFAULT_CONFIG = """
@@ -141,78 +141,13 @@ def config_file_command(args):
 
 
 def absolute_command(args):
-    if args.plate_control is None:
-        plate_control = ["B"]
-    else:
-        plate_control = args.plate_control
-    if args.plate_ignore is None:
-        plate_ignore = []
-    else:
-        plate_ignore = args.plate_ignore
-
-    results = {}
-
-    schematic = analyze.get_schematic(
-        args.platefile, len(args.imagefiles), plate_ignore
-    )
-    groups = list(dict.fromkeys(schematic))  # deduplicated copy of `schematic`
-    pattern = re.compile(args.group_regex)
-    images = [
-        analyze.Image(filename, group, args.debug)
-        for filename, group in zip(args.imagefiles, schematic)
-        if group in plate_control or pattern.search(group)
-    ]
-
-    pattern = re.compile(args.group_regex)
-    for group in groups:
-        if group in plate_control or pattern.search(group):
-            relevant_values = [
-                absolute.get_absolute_value(img) for img in images if img.group == group
-            ]
-            results[group] = relevant_values
-            if not args.silent:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", RuntimeWarning)
-                    print(group, np.nanmedian(relevant_values), relevant_values)
-
-    if args.chartfile:
-        analyze.chart(results, args.chartfile)
-
-    return results
+    args_dict = vars(args)
+    absolute.main(**args_dict)
 
 
 def analyze_command(args):
-    results = {}
-
-    schematic = analyze.get_schematic(
-        args.platefile, len(args.imagefiles), args.plate_ignore
-    )
-    groups = list(dict.fromkeys(schematic))  # deduplicated copy of `schematic`
-    images = analyze.quantify(
-        args.imagefiles,
-        args.plate_control,
-        cap=args.cap,
-        debug=args.debug,
-        group_regex=args.group_regex,
-        schematic=schematic,
-    )
-
-    pattern = re.compile(args.group_regex)
-    for group in groups:
-        if group in args.plate_control or pattern.search(group):
-            relevant_values = [
-                img.normalized_value for img in images if img.group == group
-            ]
-            results[group] = relevant_values
-            if not args.silent:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", RuntimeWarning)
-                    print(group, np.nanmedian(relevant_values), relevant_values)
-
-    if args.chartfile:
-        analyze.chart(results, args.chartfile)
-
-    return results
+    args_dict = vars(args)
+    analyze.main(**args_dict)
 
 
 def keyence_command(args):
@@ -274,6 +209,20 @@ def infection_command(args):
     args_dict = vars(args)
     try:
         infection.main(**args_dict)
+    except analyze.UserError as ue:
+        print("Error:", ue)
+        sys.exit(1)
+
+def simulator_command(args):
+    simulator.main()
+
+def spreadsheet_command(args):
+    spreadsheet.make(args.filename)
+
+def pipeline_command(args):
+    args_dict=vars(args)
+    try:
+        pipeline.main(**args_dict)
     except analyze.UserError as ue:
         print("Error:", ue)
         sys.exit(1)
@@ -484,6 +433,107 @@ def create_parser():
     infection_parser.set_defaults(func=infection_command)
 
     # endregion infection parser
+
+    # region simulator parser
+    simulator_parser = subparsers.add_parser("simulator",
+                                             help="Simulate bliss vs loewe")
+    simulator_parser.set_defaults(func=simulator_command)
+    # endregion simulator_parser
+
+    # region spreadsheet parser
+    spreadsheet_parser = subparsers.add_parser(
+        "spreadsheet",
+        help="Analyze a file or files and put into a spreadsheet"
+    )
+    spreadsheet_parser.add_argument("filenames", help="paths (relative or absolute) to files to analyze")
+    spreadsheet_parser.set_defaults(func=spreadsheet_command)
+    # endregion spreadsheet parser
+
+    # region pipeline parser
+    pipeline_parser = subparsers.add_parser(
+        "pipeline",
+        help=(
+            "Analyzer for images of whole zebrafish with fluorescent neuromasts, for the "
+            "purposes of measuring hair cell damage under drug-combination conditions. Reports "
+            "values relative to control."
+        )
+    )
+    pipeline_parser.add_argument(
+        "-cb",
+        "--checkerboard",
+        action="store_true",
+        help=(
+            "If present, the input will be treated as a checkerboard assay, with output produced "
+            "accordingly."
+        ),
+    )
+
+    pipeline_parser.add_argument(
+        "-cv",
+        "--conversions",
+        default=[],
+        nargs="*",
+        type = pipeline._key_value_pair,
+        help=(
+            "List of conversions between dose concentration labels and concrete values, each as "
+            "a separate argument, each delimited by an equals sign. For instance, ABC50 might be "
+            "an abbreviation for the EC50 of drug ABC, in which case the concrete concentration "
+            'can be supplied like "ABC50=ABC 1mM" (make sure to quote, or escape spaces).'
+        ),
+    )
+
+    pipeline_parser.add_argument(
+        "-ppc",
+        "--plate-positive-control",
+        default=[],
+        nargs="*",
+        help=(
+            "Labels to treat as the positive control conditions in the plate schematic (i.e. "
+            "conditions showing maximum effect). These wells are used to normalize all values in "
+            "the plate for more interpretable results. Any number of values may be passed."
+        ),
+    )
+
+    pipeline_parser.add_argument(
+        "--plate-info",
+        default=None,
+        help=(
+            "Any information identifying the plate(s) being analyzed that should be passed along "
+            "to files created by this process."
+        ),
+    )
+
+    pipeline_parser.add_argument(
+        "-tp",
+        "--treatment-platefile",
+        help="CSV file containing a schematic of the plate in which the imaged fish were treated. "
+             "Used to chart responses by treatment location, if desired. Row and column headers are "
+             "optional. The cell values are essentially just arbitrary labels: results will be "
+             "grouped and charted according to the supplied values.",
+    )
+
+    pipeline_parser.add_argument(
+        "--absolute-chart",
+        action="store_true",
+        help=(
+            "If present, a plate graphic will be generated with absolute (rather than relative) "
+            "brightness values."
+        ),
+    )
+
+    pipeline_parser.add_argument(
+        "--talk",
+        action="store_true",
+        help=(
+            'If present, images will be generated with the Seaborn "talk" context. Otherwise the '
+            'default "notebook" context will be used. (See '
+            "https://seaborn.pydata.org/generated/seaborn.set_context.html)"
+        ),
+    )
+    set_arguments(pipeline_parser)
+    pipeline_parser.set_defaults(func=pipeline_command)
+
+    # endregion pipeline parser
 
     return top_parser
 

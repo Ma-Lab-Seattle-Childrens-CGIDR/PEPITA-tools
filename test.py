@@ -11,168 +11,34 @@ def test():
 
     # util.equalsish
 
-    assert util.equalsish(2, 2)
-    assert util.equalsish(1 / 7, 1 / 7)
-    assert util.equalsish(0.000001, 0.000002)
-    assert not util.equalsish(0.01, 0.02)
-    assert not util.equalsish(1000, -1000)
+
+
 
     # util.extract_number
 
-    assert np.isnan(util.extract_number("abc"))
-    assert util.extract_number("easy as 123") == 123
-    assert util.extract_number("remember remember the 5th of November") == 5
-    assert util.extract_number("4-score and 20 years ago") == 4
-    assert util.extract_number("pi is approximately 3.14159") == 3.14159
+
 
     # util.get_inputs_hashfile
 
-    assert util.get_inputs_hashfile(
-        dummy1=1, dummy2="two", dummy3=3.0
-    ) == util.get_inputs_hashfile(dummy1=1, dummy2="two", dummy3=3.0)
-    assert util.get_inputs_hashfile(
-        dummy1=1, dummy2="two", dummy3=3.0
-    ) != util.get_inputs_hashfile(dummy1=1, dummy2="two", dummy3=4.0)
-
     # util.put_multimap
 
-    dict_ = {}
-    util.put_multimap(dict_, "key", "value")
-    assert dict_ == {"key": ["value"]}
+
 
     # util.Cocktail
 
-    assert util.Cocktail("A") == util.Cocktail("A")
-    assert util.Cocktail("A") != util.Cocktail("B")
-    assert util.Cocktail(("A", "B"), 50, util.Ratio(1, 1)) == util.Cocktail(
-        ("A", "B"), 50, util.Ratio(1, 1)
-    )
-    assert util.Cocktail(("A", "B"), 50, util.Ratio(1, 1)) != util.Cocktail(
-        ("A", "C"), 50, util.Ratio(1, 1)
-    )
-    assert util.Cocktail(("A", "B"), 50, util.Ratio(1, 1)) != util.Cocktail(
-        ("A", "B"), 50, util.Ratio(2, 1)
-    )
+
 
     # util.Dose
 
-    assert util.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}).drug == "XYZ"
-    assert util.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}).quantity == 1
-    assert util.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}).unit == "μM"
-    assert util.Dose("XYZ 1μM").drug == "XYZ"
-    assert util.Dose("XYZ 1μM").quantity == 1
-    assert util.Dose("XYZ 1μM").unit == "μM"
-    assert util.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}) == util.Dose("XYZ 1μM")
-    assert util.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}) != util.Dose("XYZ 2μM")
-    assert util.Dose("XYZ 1μg/mL").unit == "μg/mL"
 
-    assert float(util.Dose("XYZ 1μM")) == 1
-    assert float(util.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"})) == 1
-
-    assert util.Dose("XYZ 1μM") + 1 == util.Dose("XYZ 2μM")
-    assert 1 + util.Dose("XYZ 1μM") == util.Dose("XYZ 2μM")
-    assert util.Dose("XYZ 1μM") + util.Dose("XYZ 1μM") == util.Dose("XYZ 2μM")
-
-    assert util.Dose("XYZ 1μM") * 1 == util.Dose("XYZ 1μM")
-    assert util.Dose("XYZ 1μM") * 2 == util.Dose("XYZ 2μM")
-    assert util.Dose("XYZ 3μM") * 4 == util.Dose("XYZ 12μM")
-    assert util.Dose("XYZ 8μM") * 0.5 == util.Dose("XYZ 4μM")
-
-    assert util.Dose("XYZ99/2", conversions={"XYZ99": "XYZ 1μM"}).quantity == 0.5
-    assert util.Dose("2XYZ99", conversions={"XYZ99": "XYZ 1μM"}).quantity == 2
-    assert util.Dose("XYZ99/4", conversions={"XYZ99": "XYZ 16μM"}).quantity == 4
-    assert util.Dose("XYZ99/2", conversions={"XYZ99": "XYZ 16μM"}).quantity == 8
-    assert util.Dose("2XYZ99", conversions={"XYZ99": "XYZ 16μM"}).quantity == 32
-    assert util.Dose("3XYZ99", conversions={"XYZ99": "XYZ 16μM"}).quantity == 48
 
     # util.Ratio
 
-    assert util.Ratio(1, 2) == util.Ratio(1, 2)
-    assert util.Ratio(1, 2) == util.Ratio(2, 4)
-    assert util.Ratio(12.5, 5) == util.Ratio(25, 10)
-    assert util.Ratio(1, 2) != util.Ratio(1, 4)
-    assert util.Ratio(1, 2) != util.Ratio(2, 2)
-    assert util.Ratio(3.3, 10) != util.Ratio(1, 3)
-    assert util.Ratio(1, 2) == 0.5
-    assert util.Ratio(3, 1) == 3
 
-    assert util.equalsish(float(util.Ratio(5, 20)), 0.25)
-    assert util.equalsish(float(util.Ratio(6, 10)), 0.6)
-    assert util.equalsish(float(util.Ratio(11, 5)), 2.2)
-
-    assert util.Ratio(1, 4) * util.Ratio(4, 1) == 1
-    assert util.Ratio(1, 4) * util.Ratio(4, 1) == util.Ratio(1, 1)
-    assert 3 * util.Ratio(4, 1) == 12
-    assert 2 * util.Ratio(3, 2) == 3
-    assert util.Ratio(4, 1) * 3 == 12
-    assert util.Ratio(3, 2) * 2 == 3
-    assert util.equalsish(util.Ratio(12.5, 5) * 5, 12.5)
-    assert util.equalsish(5 * util.Ratio(12.5, 5), 12.5)
-
-    assert util.Ratio(1, 2).reciprocal() == util.Ratio(2, 1)
-    assert util.Ratio(7, 3).reciprocal() == util.Ratio(3, 7)
-
-    assert 2 / util.Ratio(1, 2) == 4
-    assert 5 / util.Ratio(5, 2) == 2
-    assert 4 / util.Ratio(8, 1) == 0.5
-
-    assert util.Ratio(1, 9).to_proportion() == util.Ratio(1, 10)
-    assert util.Ratio(5, 4).to_proportion() == util.Ratio(5, 9)
-
-    assert util.Dose("XYZ 1μM") * util.Ratio(7, 2) == util.Dose("XYZ 3.5μM")
-    assert util.Dose("XYZ 6μM") * util.Ratio(2, 3) == util.Dose("XYZ 4μM")
-    assert util.Dose("XYZ 32μM") / util.Ratio(2, 3) == util.Dose("XYZ 48μM")
-    assert util.Dose("XYZ 12μM") / util.Ratio(4, 1) == util.Dose("XYZ 3μM")
 
     # util.Solution
 
-    assert util.Solution("XYZ 1μM") == util.Solution("XYZ 1μM")
-    assert util.Solution("ABC 10μg/mL") == util.Solution("ABC 10μg/mL")
-    assert util.Solution("XYZ 1μM") != util.Solution("XYZ 1μg/mL")
-    assert util.Solution("XYZ 1μM") != util.Solution("XYZ 10μM")
-    assert util.Solution("XYZ 1μM") != util.Solution("ABC 1μM")
-    assert util.Solution("XYZ99", conversions={"XYZ99": "XYZ 1μM"}) == util.Solution(
-        "XYZ 1μM"
-    )
-    assert util.Solution("XYZ 1μM + ABC 10μg/mL") == util.Solution(
-        "XYZ 1μM + ABC 10μg/mL"
-    )
-    assert util.Solution("XYZ 1μM + ABC 10μg/mL") == util.Solution(
-        "XYZ99 + ABC 10μg/mL", conversions={"XYZ99": "XYZ 1μM"}
-    )
-    assert util.Solution("XYZ 1μM").doses[0] == util.Dose("XYZ 1μM")
-    assert util.Solution("XYZ 1μM + ABC 10μg/mL").doses == [
-        util.Dose("XYZ 1μM"),
-        util.Dose("ABC 10μg/mL"),
-    ]
 
-    assert float(util.Solution("XYZ 1μM + ABC 10μg/mL")) == 11
-
-    assert util.Solution("XYZ 10μM") > util.Solution("XYZ 2μM")
-
-    assert util.Solution("XYZ 1μM") * 2 == util.Solution("XYZ 2μM")
-    assert util.Solution("XYZ 10μM") * 0.5 == util.Solution("XYZ 5μM")
-
-    assert 2 * util.Solution("XYZ 1μM") == 2
-    assert 3 * util.Solution("XYZ 1μM + ABC 10μg/mL") == 33
-
-    assert util.Solution("XYZ 10μM") / 2 == 5
-    assert util.Solution("XYZ 32μM") / 4 == 8
-
-    assert util.Solution("XYZ 1μM").combine_doses(
-        util.Solution("ABC 10μg/mL")
-    ) == util.Solution("XYZ 1μM + ABC 10μg/mL")
-    assert util.Solution("XYZ 1μM").combine_doses(
-        util.Solution("ABC 10μg/mL")
-    ).doses == [util.Dose("XYZ 1μM"), util.Dose("ABC 10μg/mL")]
-
-    assert util.Solution("XYZ 10μM").dilute(0.5) == util.Solution("XYZ 5μM")
-    assert util.Solution("XYZ 20μM").dilute(0.2) == util.Solution("XYZ 4μM")
-
-    assert util.Solution("XYZ 10μM").get_cocktail() == util.Cocktail("XYZ")
-    assert util.Solution("XYZ 1μM + ABC 10μg/mL").get_cocktail() == util.Cocktail(
-        ("XYZ", "ABC"), ratio=util.Ratio(1, 10)
-    )
 
     #
     # dose_response

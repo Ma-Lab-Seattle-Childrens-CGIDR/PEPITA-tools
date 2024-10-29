@@ -1,15 +1,20 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+# Imports
+# Standard Library Imports
 import random
-import seaborn as sns
 from time import time
 
-import dose_response
-import util
 
-LOG_DIR = f'{util.get_config("log_dir")}/simulator'
+# External Imports
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 
+# Local Imports
+from . import dose_response, utils
+from .configuration import Configuration
+
+LOG_DIR = f'{Configuration().log_dir}/simulator'
 
 def add_noise(n, percent=0.05, standard_dev=5):
     standard_dev = standard_dev + n * percent
@@ -26,9 +31,9 @@ def add_percent_noise(n, coefficient_variance=0.05):
 
 
 def bliss_vs_loewe():
-    cocktail_a = util.Cocktail("A")
-    cocktail_b = util.Cocktail("B")
-    cocktail_combo = util.Cocktail(("A", "B"))
+    cocktail_a = utils.Cocktail("A")
+    cocktail_b = utils.Cocktail("B")
+    cocktail_combo = utils.Cocktail(("A", "B"))
 
     df = pd.DataFrame(
         columns=[
@@ -72,7 +77,7 @@ def bliss_vs_loewe():
         for a_x, b_x, combo_x, combo_y in zip(
             model_a.xs, model_b.xs, model_combo.xs, model_combo.ys
         ):
-            model_combo.cocktail.ratio = util.Ratio(a_x, b_x)
+            model_combo.cocktail.ratio = utils.Ratio(a_x, b_x)
             eob = dose_response.get_bliss_ixn(
                 combo_x, combo_y, model_a, model_b, model_combo
             )
@@ -107,7 +112,7 @@ def main():
 
 
 def simulate_noise():
-    cocktail = util.Cocktail("Test1")
+    cocktail = utils.Cocktail("Test1")
     errors = {}
 
     for i in range(10000):
@@ -148,10 +153,10 @@ def simulate_noise():
         error_ec75 = abs(ec75_real - ec75_noisy) / ec75_real
         error_ec90 = abs(ec90_real - ec90_noisy) / ec90_real
 
-        util.put_multimap(errors, 25, error_ec25)
-        util.put_multimap(errors, 50, error_ec50)
-        util.put_multimap(errors, 75, error_ec75)
-        util.put_multimap(errors, 90, error_ec90)
+        utils.put_multimap(errors, 25, error_ec25)
+        utils.put_multimap(errors, 50, error_ec50)
+        utils.put_multimap(errors, 75, error_ec75)
+        utils.put_multimap(errors, 90, error_ec90)
 
     errors_df = pd.DataFrame(
         {
@@ -182,11 +187,3 @@ def simulate_noise():
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
     plt.savefig(f"{LOG_DIR}/ec-noise_{uniq_str}.png")
     plt.clf()
-
-
-#
-# main
-#
-
-if __name__ == "__main__":
-    main()

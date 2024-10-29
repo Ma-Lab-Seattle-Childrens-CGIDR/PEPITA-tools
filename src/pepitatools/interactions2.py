@@ -1,18 +1,22 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import scipy.optimize
-import scipy.stats
-import seaborn as sns
+# Imports
+# Standard Library Imports
 from time import time
 import warnings
 
-import util
+# External Imports
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.optimize
+import scipy.stats
+import seaborn as sns
 
-LOG_DIR = f'{util.get_config("log_dir")}/interactions2'
+# Local Imports
+from . import utils
+from .configuration import Configuration
 
+LOG_DIR = f'{Configuration().log_dir}/interactions2'
 _rng = np.random.default_rng()
-
 
 def fit_model_with_noise(
     model_function,
@@ -336,7 +340,7 @@ def response_surface(
         model_function = model_1_param
         gamma_guess_0 = [0]
     else:
-        raise ValueException(f"Model with {model_size} parameters is not defined")
+        raise ValueError(f"Model with {model_size} parameters is not defined")
 
     gamma_sample_means = np.zeros((model_size, sampling_iterations))
     gamma_sample_covars = np.zeros((model_size, model_size, sampling_iterations))

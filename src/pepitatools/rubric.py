@@ -1,4 +1,10 @@
-import keyence
+# Imports
+# Standard Library Imports
+
+# External Imports
+
+# Local Imports
+from . import keyence
 
 _brightfield_acceptable = [
     1,
@@ -736,7 +742,7 @@ plates = [
 
 def well_to_index(plate, xy=None, well=None):
     if xy is None and well is None:
-        raise ValueException("Either xy or well must be passed")
+        raise ValueError("Either xy or well must be passed")
     elif well is not None:
         xy = keyence.well_to_xy(well)
 

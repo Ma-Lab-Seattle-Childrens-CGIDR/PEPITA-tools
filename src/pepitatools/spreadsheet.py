@@ -1,11 +1,15 @@
+# Imports
+# Standard Library Imports
 import io
 from PIL import Image
 import sys
+
+
+# External Imports
 import xlsxwriter
 
-import analyze6
-import imageops
-
+# Local Imports
+from . import analyze, imageops
 
 def make(filenames):
     workbook = xlsxwriter.Workbook("juxtapose.xlsx", {"nan_inf_to_errors": True})
@@ -13,7 +17,7 @@ def make(filenames):
 
     worksheet.set_column("C:F", 68)
 
-    images = analyze6.quantify(filenames)
+    images = analyze.quantify(filenames)
 
     for i in range(len(filenames)):
         worksheet.set_row(i, 275)
@@ -68,12 +72,3 @@ def img_to_buffer(img):
     bytes_io = io.BytesIO()
     Image.fromarray(img).save(bytes_io, format="png")
     return bytes_io
-
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        make(sys.argv[1:])
-    else:
-        raise TypeError(
-            "Invoke with an argument, i.e. the name of a file or files to analyze and put into spreadsheet."
-        )

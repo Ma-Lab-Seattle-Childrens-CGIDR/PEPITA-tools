@@ -1,7 +1,7 @@
 from importlib.metadata import version
 
 __author__ = "Ethan Bustad"
-__version__ = version("pepitatools")
+__version__ = version("PEPITA-tools")
 
 from . import (
     absolute,

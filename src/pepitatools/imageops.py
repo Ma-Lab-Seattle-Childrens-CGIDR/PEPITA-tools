@@ -19,7 +19,7 @@ from skimage import feature
 
 
 # Local Imports
-from .configuration import Configuration
+from .configuration import get_config_setting
 
 
 def apply_mask(img, mask):  # mask should have black background, white foreground
@@ -168,9 +168,7 @@ def get_fish_mask(
                 ),
             )
 
-    mask = _get_mask(
-        bf_img, steps,  verbose=verbose, v_file_prefix=v_file_prefix
-    )
+    mask = _get_mask(bf_img, steps, verbose=verbose, v_file_prefix=v_file_prefix)
     show(
         apply_mask(fl_img, mask),
         verbose=not verbose and not silent,
@@ -256,7 +254,7 @@ def score(img, count=10, radius=8, threshold_pct=0.05):
 
 
 def setup_imageops_logdir():
-    base_log_dir = Configuration().log_dir
+    base_log_dir = get_config_setting("log_dir")
     if base_log_dir == "/path/to/log/dir":
         raise ValueError(
             (

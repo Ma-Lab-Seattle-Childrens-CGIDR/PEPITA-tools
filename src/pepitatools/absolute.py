@@ -13,6 +13,7 @@ import numpy as np
 # Local Imports
 from . import analyze
 
+
 # from ISO 12232:1998 via https://en.wikipedia.org/wiki/Film_speed#Measurements_and_calculations
 # H = qLt/(N^2)
 # H: luminous exposure (lux-seconds), proportional to pixel value
@@ -55,28 +56,42 @@ def get_absolute_value(
         np.nan if np.isnan(L) else int(L / 10_000)
     )  # to make results more readable, "cd/cm^2"
 
-def main(imagefiles, cap=-1, chartfile=None, debug=0, group_regex='.*', platefile=None,
-		plate_control=['B'], plate_ignore=[], silent=False):
-	results = {}
 
-	schematic = analyze.get_schematic(platefile, len(imagefiles), plate_ignore)
-	groups = list(dict.fromkeys(schematic))# deduplicated copy of `schematic`
-	pattern = re.compile(group_regex)
-	images = [analyze.Image(filename, group, debug) \
-		for filename, group in zip(imagefiles, schematic) \
-			if group in plate_control or pattern.search(group)]
+def main(
+    imagefiles,
+    cap=-1,
+    chartfile=None,
+    debug=0,
+    group_regex=".*",
+    platefile=None,
+    plate_control=["B"],
+    plate_ignore=[],
+    silent=False,
+):
+    results = {}
 
-	pattern = re.compile(group_regex)
-	for group in groups:
-		if group in plate_control or pattern.search(group):
-			relevant_values = [get_absolute_value(img) for img in images if img.group == group]
-			results[group] = relevant_values
-			if not silent:
-				with warnings.catch_warnings():
-					warnings.simplefilter('ignore', RuntimeWarning)
-					print(group, np.nanmedian(relevant_values), relevant_values)
+    schematic = analyze.get_schematic(platefile, len(imagefiles), plate_ignore)
+    groups = list(dict.fromkeys(schematic))  # deduplicated copy of `schematic`
+    pattern = re.compile(group_regex)
+    images = [
+        analyze.Image(filename, group, debug)
+        for filename, group in zip(imagefiles, schematic)
+        if group in plate_control or pattern.search(group)
+    ]
 
-	if chartfile:
-		analyze.chart(results, chartfile)
+    pattern = re.compile(group_regex)
+    for group in groups:
+        if group in plate_control or pattern.search(group):
+            relevant_values = [
+                get_absolute_value(img) for img in images if img.group == group
+            ]
+            results[group] = relevant_values
+            if not silent:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", RuntimeWarning)
+                    print(group, np.nanmedian(relevant_values), relevant_values)
 
-	return results
+    if chartfile:
+        analyze.chart(results, chartfile)
+
+    return results

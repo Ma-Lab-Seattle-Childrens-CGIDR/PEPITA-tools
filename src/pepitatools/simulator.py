@@ -12,9 +12,8 @@ import seaborn as sns
 
 # Local Imports
 from . import dose_response, utils
-from .configuration import Configuration
+from .configuration import get_config_setting
 
-LOG_DIR = f'{Configuration().log_dir}/simulator'
 
 def add_noise(n, percent=0.05, standard_dev=5):
     standard_dev = standard_dev + n * percent
@@ -185,5 +184,6 @@ def simulate_noise():
     )
     plt.title("Percent Error in the Presence of 5-score + 5% Noise")
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
-    plt.savefig(f"{LOG_DIR}/ec-noise_{uniq_str}.png")
+    log_dir = f'{get_config_setting("log_dir")}/simulator'
+    plt.savefig(f"{log_dir}/ec-noise_{uniq_str}.png")
     plt.clf()

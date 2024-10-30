@@ -1,6 +1,7 @@
 """
 Calculate dose response
 """
+
 # Imports
 # Standard Library Imports
 import csv
@@ -20,9 +21,11 @@ import seaborn as sns
 
 # Local Imports
 from . import utils
-from .configuration import Configuration
+from .configuration import get_config_setting
 
-_neo_model=None
+
+_neo_model = None
+
 
 class Model:
     def __init__(self, xs, ys, cocktail, E_0=100, E_max=None):
@@ -46,7 +49,7 @@ class Model:
                         )
                         sse = sum((self.equation(xs, *popt) - ys) ** 2)
                         fits[sse] = popt
-                    except:
+                    except Exception as _: # Bare except?
                         pass
                 if not fits:
                     self.b, self.c, self.e = None, None, None
@@ -55,8 +58,9 @@ class Model:
         else:
             self.b, self.c, self.e = None, None, None
 
-    def __repr__(self):
-        return "{}({})".format(self.__class__.__name__, self.cocktail)
+    # The __repr__ is redefined below
+    # def __repr__(self):
+    #     return "{}({})".format(self.__class__.__name__, self.cocktail)
 
     def chart(
         self,
@@ -135,13 +139,13 @@ class Model:
             plt.legend()
 
         if close:
-            # Get log dir
-            base_log_dir = Configuration().log_dir
             plt.tight_layout()
             uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
             if not name:
                 name = self.get_condition()
-            plt.savefig(os.path.join(base_log_dir, f"{name}_{uniq_str}.png"))
+            log_dir = f'{get_config_setting("log_dir")}/dose_response'
+            os.makedirs(log_dir, exist_ok=True)
+            plt.savefig(os.path.join(log_dir, f"{name}_{uniq_str}.png"))
             plt.close()
             plt.clf()
 
@@ -191,11 +195,12 @@ class Model:
             np.array(other.xs) * ratio, other.ys, other.cocktail, other.E_0, other.E_max
         )
 
-        f_intersection_equals_zero = lambda xs: np.array(
-            self.equation(xs, self.b, self.c, self.e)
-            - other_adj.equation(xs, other_adj.b, other_adj.c, other_adj.e),
-            dtype=np.float64,
-        )
+        def f_intersection_equals_zero(xs):
+            return np.array(
+                self.equation(xs, self.b, self.c, self.e)
+                - other_adj.equation(xs, other_adj.b, other_adj.c, other_adj.e),
+                dtype=np.float64,
+            )
 
         plot_func(
             self.xs,
@@ -257,12 +262,13 @@ def analyze_checkerboard(
         ax = fig.add_subplot(1, 1, 1)
         ax.margins(0.006)
 
-        swapped = False
+        # Swapped is never used
+        # swapped = False
 
         if model_a.c < model_b.c:
             model_a, model_b = model_b, model_a
             models_combo = [model_combo.pivot() for model_combo in models_combo]
-            swapped = True
+        # swapped = True
 
         effect_pretty = f"{(effect_level * 100):.0f}"
         ec_a = model_a.effective_concentration(effect_level)
@@ -361,16 +367,18 @@ def analyze_checkerboard(
 
         inhibition_max_a = 1 - model_a.get_pct_survival(ys=model_a.c)
         inhibition_max_b = 1 - model_a.get_pct_survival(ys=model_b.c)
-        f_isobole = lambda ec_combo_a: do_additive_isobole(
-            ec_combo_a,
-            model_a.e,
-            model_b.e,
-            inhibition_max_a,
-            inhibition_max_b,
-            ec_b,
-            model_b.b,
-            model_a.b,
-        )
+
+        def f_isobole(ec_combo_a):
+            return do_additive_isobole(
+                ec_combo_a,
+                model_a.e,
+                model_b.e,
+                inhibition_max_a,
+                inhibition_max_b,
+                ec_b,
+                model_b.b,
+                model_a.b,
+            )
 
         plot_func(
             model_a.xs,
@@ -391,11 +399,11 @@ def analyze_checkerboard(
         plt.ylim(top=max_y)
         plt.tight_layout()
         uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
-        # get log dir
-        base_log_dir = Configuration().log_dir
+        log_dir = f'{get_config_setting("log_dir")}/dose_response'
+        os.makedirs(log_dir, exist_ok=True)
         plt.savefig(
             os.path.join(
-                base_log_dir,
+                log_dir,
                 f"{model_a.cocktail}+{model_b.cocktail}_isoboles_{uniq_str}.png",
             )
         )
@@ -474,19 +482,17 @@ def analyze_checkerboard(
         )
         plt.tight_layout()
         uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
-        # Get log dir
-        base_log_dir = Configuration().log_dir
+        log_dir = f'{get_config_setting("log_dir")}/dose_response'
+        os.makedirs(log_dir, exist_ok=True)
         plt.savefig(
-            f"{base_log_dir}/{model_a.get_condition()}-{model_b.get_condition()}_{file_name_context2}"
+            f"{log_dir}/{model_a.get_condition()}-{model_b.get_condition()}_{file_name_context2}"
             + f"bliss_{uniq_str}.png"
         )
         plt.clf()
     elif method == "Loewe":
         pass
     else:
-        raise ValueError(
-            '`method` must be one of "interpolation", "Bliss", or "Loewe"'
-        )
+        raise ValueError('`method` must be one of "interpolation", "Bliss", or "Loewe"')
 
 
 def analyze_diamond(model_a, model_b, model_combo):
@@ -501,7 +507,9 @@ def analyze_diamond(model_a, model_b, model_combo):
 
     ax = plt.gca()
 
-    f_diagonal = lambda ec_combo_a: ec_combo_a / model_combo.cocktail.ratio
+    def f_diagonal(ec_combo_a):
+        return ec_combo_a / model_combo.cocktail.ratio
+
     plot_func(
         model_a.xs,
         f_diagonal,
@@ -615,16 +623,18 @@ def analyze_diamond(model_a, model_b, model_combo):
 
     inhibition_max_a = 1 - model_a.get_pct_survival(ys=model_a.c)
     inhibition_max_b = 1 - model_a.get_pct_survival(ys=model_b.c)
-    f_isobole = lambda ec_combo_a: do_additive_isobole(
-        ec_combo_a,
-        model_a.e,
-        model_b.e,
-        inhibition_max_a,
-        inhibition_max_b,
-        concentration_b,
-        model_b.b,
-        model_a.b,
-    )
+
+    def f_isobole(ec_combo_a):
+        return do_additive_isobole(
+            ec_combo_a,
+            model_a.e,
+            model_b.e,
+            inhibition_max_a,
+            inhibition_max_b,
+            concentration_b,
+            model_b.b,
+            model_a.b,
+        )
 
     plot_func(
         model_a.xs,
@@ -653,11 +663,12 @@ def analyze_diamond(model_a, model_b, model_combo):
     )
 
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
-    # Get log dir
-    base_log_dir = Configuration().log_dir
+    log_dir = f'{get_config_setting("log_dir")}/dose_response'
+    os.makedirs(log_dir, exist_ok=True)
     return (
         os.path.join(
-            base_log_dir, f"{model_a.cocktail}+{model_b.cocktail}_isoboles_{uniq_str}.png"
+            f'{get_config_setting("log_dir")}/dose_response',
+            f"{model_a.cocktail}+{model_b.cocktail}_isoboles_{uniq_str}.png",
         ),
         max_x,
         max_y,
@@ -704,7 +715,7 @@ def chart_checkerboard(model_a, model_b, models_combo, file_name_context=None):
         index=label_a, columns=label_b, values="Pct. Survival", aggfunc="median"
     )
 
-    fig = plt.figure(figsize=(12, 8), dpi=100)
+    _fig = plt.figure(figsize=(12, 8), dpi=100)
     ax = sns.heatmap(
         data,
         vmin=0,
@@ -728,9 +739,10 @@ def chart_checkerboard(model_a, model_b, models_combo, file_name_context=None):
     )
     plt.tight_layout()
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
-    base_log_dir = Configuration().log_dir
+    log_dir = f'{get_config_setting("log_dir")}/dose_response'
+    os.makedirs(log_dir, exist_ok=True)
     plt.savefig(
-        f"{base_log_dir}/{model_a.get_condition()}-{model_b.get_condition()}_{file_name_context2}"
+        f"{log_dir}/{model_a.get_condition()}-{model_b.get_condition()}_{file_name_context2}"
         + f"checkerboard_{uniq_str}.png"
     )
     plt.clf()
@@ -791,10 +803,10 @@ def chart_diamond(model_a, model_b, model_combo):
     plt.title(f"{model_a.get_condition()} vs. {model_b.get_condition()}: Model")
     plt.tight_layout()
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
-    # Get log directory
-    base_log_dir = Configuration().log_dir
+    log_dir = f'{get_config_setting("log_dir")}/dose_response'
+    os.makedirs(log_dir, exist_ok=True)
     plt.savefig(
-        f"{base_log_dir}/combo_{model_a.get_condition()}-{model_b.get_condition()}_model_{uniq_str}.png"
+        f"{log_dir}/combo_{model_a.get_condition()}-{model_b.get_condition()}_model_{uniq_str}.png"
     )
     plt.clf()
 
@@ -906,17 +918,21 @@ def get_combo_additive_expectation(
     inhibition_max_b = 1 - model_a.get_pct_survival(ys=model_b.c)
 
     # find intersection between dose ratio and additive isobole
-    f_isobole = lambda ec_combo_a: do_additive_isobole(
-        ec_combo_a,
-        model_a.e,
-        model_b.e,
-        inhibition_max_a,
-        inhibition_max_b,
-        ec_b_alone,
-        model_b.b,
-        model_a.b,
-    )
-    f_diagonal = lambda ec_combo_a: ec_combo_a / combo_ratio_a
+    def f_isobole(ec_combo_a):
+        return do_additive_isobole(
+            ec_combo_a,
+            model_a.e,
+            model_b.e,
+            inhibition_max_a,
+            inhibition_max_b,
+            ec_b_alone,
+            model_b.b,
+            model_a.b,
+        )
+
+    def f_diagonal(ec_combo_a):
+        return ec_combo_a / combo_ratio_a
+
     simplistic_additive_estimate = 1 if np.isnan(ec_a_alone) else ec_a_alone / 2
 
     if plot:
@@ -988,9 +1004,8 @@ def get_combo_FIC(
 
 
 def get_intersection(f1, f2, guess):
-    f_intersection_equals_zero = lambda xs: np.array(
-        f1(xs), dtype=np.float64
-    ) - np.array(f2(xs), dtype=np.float64)
+    def f_intersection_equals_zero(xs):
+        return np.array(f1(xs), dtype=np.float64) - np.array(f2(xs), dtype=np.float64)
 
     try:
         with warnings.catch_warnings():
@@ -1009,8 +1024,8 @@ def log_logistic_model(xs, b, c, d, e):
 
 
 def neo_E_max():
-    neo_model = _get_neo_model()
-    return _neo_model.get_condition_E_max()
+    _neo_model_local = _get_neo_model()
+    return _neo_model_local.get_condition_E_max()
 
 
 def plot_func(
@@ -1051,11 +1066,11 @@ def plot_func(
     plt.plot(line_xs, line_ys, color=color, label=label, marker=None, zorder=-1)
     plt.legend()
     if close:
-        # Get log dir from config
-        base_log_dir = Configuration().log_dir
         plt.tight_layout()
         uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
-        plt.savefig(os.path.join(base_log_dir, f"{filename_prefix}_{uniq_str}.png"))
+        log_dir = f'{get_config_setting("log_dir")}/dose_response'
+        os.makedirs(log_dir, exist_ok=True)
+        plt.savefig(os.path.join(log_dir, f"{filename_prefix}_{uniq_str}.png"))
         plt.close()
         plt.clf()
 
@@ -1078,7 +1093,6 @@ def _get_neo_model(debug=1):
     global _neo_model
     if _neo_model is None:
         with importlib.resources.path("pepitatools.data", "neo_data.csv") as data_file:
-            _neo_model = _get_model(
-                data_file, debug
-            )
+            _neo_model = _get_model(data_file, debug)
+        # _neo_model = _get_model(os.path.join(utils.get_here(), 'examples/neo_data.csv'), debug)
     return _neo_model

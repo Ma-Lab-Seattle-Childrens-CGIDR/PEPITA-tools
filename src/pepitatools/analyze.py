@@ -1,9 +1,10 @@
-""" """
+"""
+Analyze plates
+"""
 
 # Imports
 # Standard Library Imports
 from __future__ import annotations
-import configparser
 import csv
 import os
 import re
@@ -20,8 +21,7 @@ import seaborn as sns
 # Local Imports
 from . import imageops
 from . import keyence
-from . import utils
-from .configuration import Configuration
+from .configuration import get_config_setting
 
 # for windows consoles (e.g. git bash) to work properly
 try:
@@ -39,14 +39,19 @@ class Image:
         debug=0,
     ):
         # Get values from config
-        config = Configuration()
-        self.channel = int(config.channel_main_ototox)
-        self.channel_subtr = int(config.channel_subtr_ototox)
+        self.channel = int(get_config_setting("channel_main_ototox"))
+        self.channel_subtr = int(get_config_setting("channel_subtr_ototox"))
         self.particles = True
-        self.replacement_delim = config.filename_replacement_delimiter
-        self.replacement_brfld = config.filename_replacement_brightfield_ototox.split(self.replacement_delim)
-        self.replacement_mask = config.filename_replacement_mask_ototox.split(self.replacement_delim)
-        self.replacement_subtr = config.filename_replacement_subtr_ototox.split(self.replacement_delim)
+        self.replacement_delim = get_config_setting("filename_replacement_delimiter")
+        self.replacement_brfld = get_config_setting(
+            "filename_replacement_brightfield_ototox"
+        ).split(self.replacement_delim)
+        self.replacement_mask = get_config_setting(
+            "filename_replacement_mask_ototox"
+        ).split(self.replacement_delim)
+        self.replacement_subtr = get_config_setting(
+            "filename_replacement_subtr_ototox"
+        ).split(self.replacement_delim)
         self.fl_filename = filename
         self.bf_filename = filename.replace(
             self.replacement_brfld[0], self.replacement_brfld[1]
@@ -170,7 +175,7 @@ def chart(results, chartfile, scale="linear"):
             }
         )
 
-        fig = plt.figure(figsize=(12, 8), dpi=100)
+        _fig = plt.figure(figsize=(12, 8), dpi=100)
         ax = sns.swarmplot(x="group", y="brightness", data=data)
         ax.set_yscale(scale)
         if scale == "linear":
@@ -189,9 +194,11 @@ def chart(results, chartfile, scale="linear"):
         plt.savefig(chartfile)
 
 
-def get_schematic(platefile, target_count, plate_ignore=[], flat=True):
+def get_schematic(platefile, target_count, plate_ignore=None, flat=True):
     if not platefile:
         return keyence.LAYOUT_DEFAULT
+    if plate_ignore is None:
+        plate_ignore = []
 
     if "" not in plate_ignore:
         plate_ignore.append("")
@@ -219,8 +226,10 @@ def get_schematic(platefile, target_count, plate_ignore=[], flat=True):
 
 
 def quantify(
-    imagefiles, plate_control=["B"], cap=-1, debug=0, group_regex=".*", schematic=None
+    imagefiles, plate_control=None, cap=-1, debug=0, group_regex=".*", schematic=None
 ):
+    if plate_control is None:
+        plate_control = ["B"]
     pattern = re.compile(group_regex)
     images = [
         Image(filename, group, debug)
@@ -248,23 +257,45 @@ def _calculate_control_values(images, plate_control):
 
     return ctrl_vals
 
-def main(imagefiles, cap=-1, chartfile=None, debug=0, group_regex='.*', platefile=None,
-        plate_control=['B'], plate_ignore=[], silent=False):
+
+def main(
+    imagefiles,
+    cap=-1,
+    chartfile=None,
+    debug=0,
+    group_regex=".*",
+    platefile=None,
+    plate_control=None,
+    plate_ignore=None,
+    silent=False,
+):
+    if plate_control is None:
+        plate_control = ["B"]
+    if plate_ignore is None:
+        plate_ignore = []
     results = {}
 
     schematic = get_schematic(platefile, len(imagefiles), plate_ignore)
-    groups = list(dict.fromkeys(schematic))# deduplicated copy of `schematic`
-    images = quantify(imagefiles, plate_control, cap=cap, debug=debug, group_regex=group_regex,
-        schematic=schematic)
+    groups = list(dict.fromkeys(schematic))  # deduplicated copy of `schematic`
+    images = quantify(
+        imagefiles,
+        plate_control,
+        cap=cap,
+        debug=debug,
+        group_regex=group_regex,
+        schematic=schematic,
+    )
 
     pattern = re.compile(group_regex)
     for group in groups:
         if group in plate_control or pattern.search(group):
-            relevant_values = [img.normalized_value for img in images if img.group == group]
+            relevant_values = [
+                img.normalized_value for img in images if img.group == group
+            ]
             results[group] = relevant_values
             if not silent:
                 with warnings.catch_warnings():
-                    warnings.simplefilter('ignore', RuntimeWarning)
+                    warnings.simplefilter("ignore", RuntimeWarning)
                     print(group, np.nanmedian(relevant_values), relevant_values)
 
     if chartfile:

@@ -8,7 +8,8 @@ import numpy as np
 
 # Local Imports
 from pepitatools import utils
-from pepitatools.configuration import Configuration
+from pepitatools.configuration import set_config_setting
+
 
 class TestUtils(unittest.TestCase):
     def test_equalsish(self):
@@ -20,48 +21,60 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(utils.equalsish(1000, -1000))
 
     def test_extract_number(self):
-        self.assertTrue( np.isnan(utils.extract_number("abc")))
-        self.assertTrue( utils.extract_number("easy as 123") == 123)
-        self.assertTrue( utils.extract_number("remember remember the 5th of November") == 5)
-        self.assertTrue( utils.extract_number("4-score and 20 years ago") == 4)
-        self.assertTrue( utils.extract_number("pi is approximately 3.14159") == 3.14159)
+        self.assertTrue(np.isnan(utils.extract_number("abc")))
+        self.assertTrue(utils.extract_number("easy as 123") == 123)
+        self.assertTrue(
+            utils.extract_number("remember remember the 5th of November") == 5
+        )
+        self.assertTrue(utils.extract_number("4-score and 20 years ago") == 4)
+        self.assertTrue(utils.extract_number("pi is approximately 3.14159") == 3.14159)
 
     def test_get_inputs_hashfile(self):
-        config = Configuration()
         log_dir = pathlib.Path(__file__).parent / "tmp_logs"
         log_dir.mkdir(exist_ok=True)
-        config.log_dir = str(log_dir)
+        set_config_setting("log_dir", str(log_dir))
 
-        self.assertTrue( utils.get_inputs_hashfile(
-            dummy1=1, dummy2="two", dummy3=3.0
-        ) == utils.get_inputs_hashfile(dummy1=1, dummy2="two", dummy3=3.0))
-        self.assertTrue(utils.get_inputs_hashfile(
-            dummy1=1, dummy2="two", dummy3=3.0
-        ) != utils.get_inputs_hashfile(dummy1=1, dummy2="two", dummy3=4.0))
+        self.assertTrue(
+            utils.get_inputs_hashfile(dummy1=1, dummy2="two", dummy3=3.0)
+            == utils.get_inputs_hashfile(dummy1=1, dummy2="two", dummy3=3.0)
+        )
+        self.assertTrue(
+            utils.get_inputs_hashfile(dummy1=1, dummy2="two", dummy3=3.0)
+            != utils.get_inputs_hashfile(dummy1=1, dummy2="two", dummy3=4.0)
+        )
 
         # Delete the temporary log directory, and its contents
         for f in log_dir.glob("*"):
+            # Clear out the cache directory
+            if f.name == ".cache":
+                for sub_f in f.glob("*"):
+                    sub_f.unlink()
+                f.rmdir()
+                continue
             f.unlink()
         log_dir.rmdir()
-        
+
     def test_put_multimap(self):
         dict_ = {}
         utils.put_multimap(dict_, "key", "value")
         self.assertDictEqual(dict_, {"key": ["value"]})
-        
+
     def test_cocktail(self):
-        self.assertEqual( utils.Cocktail("A"), utils.Cocktail("A"))
-        self.assertNotEquals( utils.Cocktail("A"),utils.Cocktail("B"))
-        self.assertEquals( utils.Cocktail(("A", "B"), 50, utils.Ratio(1, 1)), utils.Cocktail(
-            ("A", "B"), 50, utils.Ratio(1, 1)
-        ))
-        self.assertNotEquals(utils.Cocktail(("A", "B"), 50, utils.Ratio(1, 1)), utils.Cocktail(
-            ("A", "C"), 50, utils.Ratio(1, 1)
-        ))
-        self.assertNotEquals( utils.Cocktail(("A", "B"), 50, utils.Ratio(1, 1)), utils.Cocktail(
-            ("A", "B"), 50, utils.Ratio(2, 1)
-        ))
-    
+        self.assertEqual(utils.Cocktail("A"), utils.Cocktail("A"))
+        self.assertNotEqual(utils.Cocktail("A"), utils.Cocktail("B"))
+        self.assertEqual(
+            utils.Cocktail(("A", "B"), 50, utils.Ratio(1, 1)),
+            utils.Cocktail(("A", "B"), 50, utils.Ratio(1, 1)),
+        )
+        self.assertNotEqual(
+            utils.Cocktail(("A", "B"), 50, utils.Ratio(1, 1)),
+            utils.Cocktail(("A", "C"), 50, utils.Ratio(1, 1)),
+        )
+        self.assertNotEqual(
+            utils.Cocktail(("A", "B"), 50, utils.Ratio(1, 1)),
+            utils.Cocktail(("A", "B"), 50, utils.Ratio(2, 1)),
+        )
+
     def test_dose(self):
         assert utils.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}).drug == "XYZ"
         assert utils.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}).quantity == 1
@@ -69,8 +82,12 @@ class TestUtils(unittest.TestCase):
         assert utils.Dose("XYZ 1μM").drug == "XYZ"
         assert utils.Dose("XYZ 1μM").quantity == 1
         assert utils.Dose("XYZ 1μM").unit == "μM"
-        assert utils.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}) == utils.Dose("XYZ 1μM")
-        assert utils.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}) != utils.Dose("XYZ 2μM")
+        assert utils.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}) == utils.Dose(
+            "XYZ 1μM"
+        )
+        assert utils.Dose("XYZ99", conversions={"XYZ99": "XYZ 1μM"}) != utils.Dose(
+            "XYZ 2μM"
+        )
         assert utils.Dose("XYZ 1μg/mL").unit == "μg/mL"
 
         assert float(utils.Dose("XYZ 1μM")) == 1
@@ -91,7 +108,7 @@ class TestUtils(unittest.TestCase):
         assert utils.Dose("XYZ99/2", conversions={"XYZ99": "XYZ 16μM"}).quantity == 8
         assert utils.Dose("2XYZ99", conversions={"XYZ99": "XYZ 16μM"}).quantity == 32
         assert utils.Dose("3XYZ99", conversions={"XYZ99": "XYZ 16μM"}).quantity == 48
-        
+
     def test_ratio(self):
         assert utils.Ratio(1, 2) == utils.Ratio(1, 2)
         assert utils.Ratio(1, 2) == utils.Ratio(2, 4)
@@ -129,16 +146,16 @@ class TestUtils(unittest.TestCase):
         assert utils.Dose("XYZ 6μM") * utils.Ratio(2, 3) == utils.Dose("XYZ 4μM")
         assert utils.Dose("XYZ 32μM") / utils.Ratio(2, 3) == utils.Dose("XYZ 48μM")
         assert utils.Dose("XYZ 12μM") / utils.Ratio(4, 1) == utils.Dose("XYZ 3μM")
-        
+
     def test_solution(self):
         assert utils.Solution("XYZ 1μM") == utils.Solution("XYZ 1μM")
         assert utils.Solution("ABC 10μg/mL") == utils.Solution("ABC 10μg/mL")
         assert utils.Solution("XYZ 1μM") != utils.Solution("XYZ 1μg/mL")
         assert utils.Solution("XYZ 1μM") != utils.Solution("XYZ 10μM")
         assert utils.Solution("XYZ 1μM") != utils.Solution("ABC 1μM")
-        assert utils.Solution("XYZ99", conversions={"XYZ99": "XYZ 1μM"}) == utils.Solution(
-            "XYZ 1μM"
-        )
+        assert utils.Solution(
+            "XYZ99", conversions={"XYZ99": "XYZ 1μM"}
+        ) == utils.Solution("XYZ 1μM")
         assert utils.Solution("XYZ 1μM + ABC 10μg/mL") == utils.Solution(
             "XYZ 1μM + ABC 10μg/mL"
         )
@@ -178,6 +195,7 @@ class TestUtils(unittest.TestCase):
         assert utils.Solution("XYZ 1μM + ABC 10μg/mL").get_cocktail() == utils.Cocktail(
             ("XYZ", "ABC"), ratio=utils.Ratio(1, 10)
         )
-        
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     unittest.main()

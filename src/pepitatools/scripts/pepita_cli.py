@@ -18,9 +18,21 @@ import numpy as np
 
 
 # Local Imports
-from .. import (analyze, absolute, chart, dose_response, imageops, infection,
-                keyence, pipeline, simulator, spreadsheet, utils)
-from ..configuration import Configuration
+from pepitatools import (
+    analyze,
+    absolute,
+    chart,
+    dose_response,
+    imagej_scripts,
+    imageops,
+    infection,
+    keyence,
+    pipeline,
+    simulator,
+    spreadsheet,
+    utils,
+)
+from pepitatools.configuration import read_config, get_config_setting
 
 DEFAULT_CONFIG = """
 [Main]
@@ -155,13 +167,16 @@ def keyence_command(args):
         metadata = keyence.extract_metadata(filename)
         print(filename, json.dumps(metadata, indent=2))
 
+
 def imageops_command(args):
     for bf_filename in args.imagefiles:
         fl_filename = bf_filename.replace("CH4", "CH1")
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             bf_img = imageops.read(bf_filename, np.uint16)
-            fl_img = None if not args.particles else imageops.read(fl_filename, np.uint16, 1)
+            fl_img = (
+                None if not args.particles else imageops.read(fl_filename, np.uint16, 1)
+            )
         imageops.get_fish_mask(
             bf_img,
             fl_img,
@@ -172,10 +187,12 @@ def imageops_command(args):
             mask_filename=bf_filename.replace("CH4", "mask"),
         )
 
+
 def chart_command(args):
     if args.chart_type == "boxplot":
         # boxplot([int(x) for x in sys.argv[2:]])
         chart.boxplot()
+
 
 def dose_response_command(args):
     if args.filename is None:
@@ -201,9 +218,14 @@ def dose_response_command(args):
     plt.ylabel("Pipeline Score")
 
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
-    plt.savefig(os.path.join(Configuration().log_dir, f"{models[0].get_condition()}_{uniq_str}.png"))
+    plt.savefig(
+        os.path.join(
+            get_config_setting("log_dir"), f"{models[0].get_condition()}_{uniq_str}.png"
+        )
+    )
     plt.close()
     plt.clf()
+
 
 def infection_command(args):
     args_dict = vars(args)
@@ -213,19 +235,38 @@ def infection_command(args):
         print("Error:", ue)
         sys.exit(1)
 
+
 def simulator_command(args):
     simulator.main()
+
 
 def spreadsheet_command(args):
     spreadsheet.make(args.filename)
 
+
 def pipeline_command(args):
-    args_dict=vars(args)
+    args_dict = vars(args)
     try:
         pipeline.main(**args_dict)
     except analyze.UserError as ue:
         print("Error:", ue)
         sys.exit(1)
+
+
+def imagej_scripts_command(args):
+    if args.scripts is None:
+        scripts = [
+            "openformasking",
+            "openformaskingsingle",
+            "savefishmask",
+            "savefishnullmask",
+            "macroize",
+        ]
+    else:
+        scripts = args.scripts
+    for script in scripts:
+        imagej_scripts.write_script(script, args.directory)
+
 
 # endregion subcommands
 
@@ -242,6 +283,7 @@ def create_parser():
         "directory",
     )
     subparsers = top_parser.add_subparsers(help="subcommand help", required=True)
+    top_parser.set_defaults(command=None)
     # endregion toplevel parser
 
     # region config-file parser
@@ -258,6 +300,7 @@ def create_parser():
         help="Directory to place default config file, current directory is used if not provided",
     )
     config_file_parser.set_defaults(func=config_file_command)
+    config_file_parser.set_defaults(command="config-file")
     # endregion config-file parser
 
     # region absolute parser
@@ -296,8 +339,9 @@ def create_parser():
 
     # Create the parser for the imageops command
     imageops_parser = subparsers.add_parser(
-        "imageops", help = "Utility for operating on images of whole zebrafish with stained neuromasts, "
-            "for the purposes of measuring hair cell damage."
+        "imageops",
+        help="Utility for operating on images of whole zebrafish with stained neuromasts, "
+        "for the purposes of measuring hair cell damage.",
     )
     imageops_parser.add_argument(
         "imagefiles",
@@ -329,25 +373,26 @@ def create_parser():
 
     # region chart parser
     # Create the parser for the chart subcommand
-    chart_parser = subparsers.add_parser(
-        "chart", help = "Create a boxplot"
+    chart_parser = subparsers.add_parser("chart", help="Create a boxplot")
+    chart_parser.add_argument(
+        "chart_type", type=str, help="Desired type of chart e.g boxplot"
     )
-    chart_parser.add_argument("chart_type", required=True, type=str,
-                              help="Desired type of chart e.g boxplot")
     chart_parser.set_defaults(func=chart_command)
     # endregion chart parser
 
     # region dose_response parser
     # Create the parser for the dose_response script
     dose_response_parser = subparsers.add_parser(
-        name="dose_response",
-        help="Evaluate the dose response for models in filenames"
+        name="dose_response", help="Evaluate the dose response for models in filenames"
     )
-    dose_response_parser.add_argument("filename", nargs="*", default=None,
-                                      help="filenames containing dose response models")
+    dose_response_parser.add_argument(
+        "filename",
+        nargs="*",
+        default=None,
+        help="filenames containing dose response models",
+    )
     dose_response_parser.set_defaults(func=dose_response_command)
 
-    
     # endregion dose_response parser
 
     # region infection parser
@@ -357,7 +402,7 @@ def create_parser():
             "Analyzer for images of whole zebrafish with stained neuromasts, for the "
             "purposes of measuring hair cell damage under drug-combination conditions. Reports "
             "values relative to control."
-        )
+        ),
     )
 
     infection_parser.add_argument(
@@ -409,9 +454,9 @@ def create_parser():
         "-tp",
         "--treatment-platefile",
         help="CSV file containing a schematic of the plate in which the imaged fish were treated. "
-             "Used to chart responses by treatment location, if desired. Row and column headers are "
-             "optional. The cell values are essentially just arbitrary labels: results will be "
-             "grouped and charted according to the supplied values.",
+        "Used to chart responses by treatment location, if desired. Row and column headers are "
+        "optional. The cell values are essentially just arbitrary labels: results will be "
+        "grouped and charted according to the supplied values.",
     )
 
     infection_parser.add_argument(
@@ -435,17 +480,19 @@ def create_parser():
     # endregion infection parser
 
     # region simulator parser
-    simulator_parser = subparsers.add_parser("simulator",
-                                             help="Simulate bliss vs loewe")
+    simulator_parser = subparsers.add_parser(
+        "simulator", help="Simulate bliss vs loewe"
+    )
     simulator_parser.set_defaults(func=simulator_command)
     # endregion simulator_parser
 
     # region spreadsheet parser
     spreadsheet_parser = subparsers.add_parser(
-        "spreadsheet",
-        help="Analyze a file or files and put into a spreadsheet"
+        "spreadsheet", help="Analyze a file or files and put into a spreadsheet"
     )
-    spreadsheet_parser.add_argument("filenames", help="paths (relative or absolute) to files to analyze")
+    spreadsheet_parser.add_argument(
+        "filenames", help="paths (relative or absolute) to files to analyze"
+    )
     spreadsheet_parser.set_defaults(func=spreadsheet_command)
     # endregion spreadsheet parser
 
@@ -456,7 +503,7 @@ def create_parser():
             "Analyzer for images of whole zebrafish with fluorescent neuromasts, for the "
             "purposes of measuring hair cell damage under drug-combination conditions. Reports "
             "values relative to control."
-        )
+        ),
     )
     pipeline_parser.add_argument(
         "-cb",
@@ -473,7 +520,7 @@ def create_parser():
         "--conversions",
         default=[],
         nargs="*",
-        type = pipeline._key_value_pair,
+        type=pipeline._key_value_pair,
         help=(
             "List of conversions between dose concentration labels and concrete values, each as "
             "a separate argument, each delimited by an equals sign. For instance, ABC50 might be "
@@ -507,9 +554,9 @@ def create_parser():
         "-tp",
         "--treatment-platefile",
         help="CSV file containing a schematic of the plate in which the imaged fish were treated. "
-             "Used to chart responses by treatment location, if desired. Row and column headers are "
-             "optional. The cell values are essentially just arbitrary labels: results will be "
-             "grouped and charted according to the supplied values.",
+        "Used to chart responses by treatment location, if desired. Row and column headers are "
+        "optional. The cell values are essentially just arbitrary labels: results will be "
+        "grouped and charted according to the supplied values.",
     )
 
     pipeline_parser.add_argument(
@@ -535,6 +582,28 @@ def create_parser():
 
     # endregion pipeline parser
 
+    # region imagej scripts parser
+    script_parser = subparsers.add_parser(
+        "imagej-script", help="Write ImageJ scripts to provided directory"
+    )
+    script_parser.add_argument(
+        "scripts",
+        nargs="*",
+        default=None,
+        help="Names of scripts to write to 'directory', if not provided will save all scripts "
+        "to directory.",
+    )
+    script_parser.add_argument(
+        "-d",
+        "--directory",
+        default=".",
+        help="Path (relative or absolute) to directory to write Imagej scripts, if not "
+        "provided will save scripts to current directory",
+        dest="directory",
+    )
+    script_parser.set_defaults(func=imagej_scripts_command)
+    # endregion imagej scripts parser
+
     return top_parser
 
 
@@ -543,7 +612,12 @@ def pepita():
     parser = create_parser()
     # Parse arguments from stdin
     args = parser.parse_args()
-    # Read the config file
-    utils.read_config(args.config)
+    if args.command != "config-file":
+        # Read the config file
+        read_config(args.config)
     # Call the desired subcommand
     args.func(args)
+
+
+if __name__ == "__main__":
+    pepita()

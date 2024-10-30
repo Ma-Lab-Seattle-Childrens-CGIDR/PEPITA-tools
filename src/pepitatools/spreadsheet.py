@@ -2,7 +2,6 @@
 # Standard Library Imports
 import io
 from PIL import Image
-import sys
 
 
 # External Imports
@@ -10,6 +9,7 @@ import xlsxwriter
 
 # Local Imports
 from . import analyze, imageops
+
 
 def make(filenames):
     workbook = xlsxwriter.Workbook("juxtapose.xlsx", {"nan_inf_to_errors": True})

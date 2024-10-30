@@ -1,5 +1,6 @@
 # Imports
 # Standard Library Imports
+import os
 from time import time
 import warnings
 
@@ -12,11 +13,10 @@ import scipy.stats
 import seaborn as sns
 
 # Local Imports
-from . import utils
-from .configuration import Configuration
+from .configuration import get_config_setting
 
-LOG_DIR = f'{Configuration().log_dir}/interactions2'
 _rng = np.random.default_rng()
+
 
 def fit_model_with_noise(
     model_function,
@@ -202,7 +202,7 @@ def plot_heatmap(
         index=label_a, columns=label_b, values="label", aggfunc="first", dropna=False
     )
 
-    fig = plt.figure(figsize=(12, 8), dpi=100)
+    _fig = plt.figure(figsize=(12, 8), dpi=100)
     ax = sns.heatmap(
         data_values,
         vmin=-1,
@@ -227,8 +227,10 @@ def plot_heatmap(
     plt.title(f"{name_a} vs. {name_b}: Bliss Ixn ({model_size}-param)")
     plt.tight_layout()
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
+    log_dir = f'{get_config_setting("log_dir")}/interactions2'
+    os.makedirs(log_dir, exist_ok=True)
     plt.savefig(
-        f"{LOG_DIR}/{name_a}-{name_b}_{file_name_context}bliss_{model_size}-param_{uniq_str}.png"
+        f"{log_dir}/{name_a}-{name_b}_{file_name_context}bliss_{model_size}-param_{uniq_str}.png"
     )
     plt.clf()
 

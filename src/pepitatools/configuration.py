@@ -1,175 +1,101 @@
 """
 Provide global configuration
 """
+
 # Imports
 # Standard Library Imports
+import configparser
+import os
+import pathlib
+from typing import Union
 
 # External Imports
 
 # Local Imports
 
-__all__ = ["Configuration"]
+__all__ = ["get_config_setting", "set_config_setting", "read_config"]
 
-# Create a singleton metaclass
-class Singleton(type):
-    """Implementation of singleton as a metaclass"""
+_CONFIG_SECTION = "Main"
 
-    _instances = {}
+# Set Default Configuration Options
+_CONFIGURATION = {
+    "absolute_max_infection": 26249,
+    "absolute_min_infection": 431,
+    "absolute_max_ototox": 26249,
+    "absolute_min_ototox": 431,
+    "channel_main_ototox": 1,
+    "channel_main_infection": 0,
+    "channel_subtr_ototox": 0,
+    "channel_subtr_infection": 1,
+    "filename_replacement_delimiter": "|",
+    "filename_replacement_brightfield_infection": "CH2|CH4",
+    "filename_replacement_brightfield_ototox": "CH1|CH4",
+    "filename_replacement_mask_infection": "CH2|mask",
+    "filename_replacement_mask_ototox": "CH1|mask",
+    "filename_replacement_subtr_infection": "CH2|CH1",
+    "filename_replacement_subtr_ototox": "CH1|CH2",
+    "log_dir": "/path/to/log/dir",
+}
 
-    def __call__(cls, *args, **kwargs):
-        """Override an inheriting class' call."""
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
 
-# Create a configuration Class
-class Configuration(metaclass=Singleton):
-    """
-    Global Configuration Object
-    """
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.absolute_max_infection = 26249
-        self.absolute_min_infection = 431
-        self.absolute_max_ototox = 26249
-        self.absolute_min_ototox = 431
-        self.channel_main_ototox = 1
-        self.channel_main_infection = 0
-        self.channel_subtr_ototox = 0
-        self.channel_subtr_infection = 1
-        self.filename_replacement_delimiter = "|"
-        self.filename_replacement_brightfield_infection = "CH2|CH4"
-        self.filename_replacement_brightfield_ototox = "CH1|CH4"
-        self.filename_replacement_mask_infection = "CH2|mask"
-        self.filename_replacement_mask_ototox = "CH1|mask"
-        self.filename_replacement_subtr_infection = "CH2|CH1"
-        self.filename_replacement_subtr_ototox = "CH1|CH2"
-        self.log_dir = "/path/to/log/dir"
+def get_config_setting(setting):
+    return _CONFIGURATION.get(setting, None)
 
-    @property
-    def absolute_max_infection(self):
-        return self.absolute_max_infection
 
-    @absolute_max_infection.setter
-    def absolute_max_infection(self, value):
-        self.absolute_max_infection = value
+def set_config_setting(setting, value):
+    _CONFIGURATION[setting] = value
 
-    @property
-    def absolute_min_infection(self):
-        return self.absolute_min_infection
 
-    @absolute_min_infection.setter
-    def absolute_min_infection(self, value):
-        self.absolute_min_infection = value
+def read_config(config_file: Union[str, os.PathLike, None] = None) -> None:
+    if config_file is None:
+        config_file = pathlib.Path(".") / "config.ini"
 
-    @property
-    def absolute_max_ototox(self):
-        return self.absolute_max_ototox
+    parsed_config = configparser.ConfigParser()
+    parsed_config.read(str(config_file))
 
-    @absolute_max_ototox.setter
-    def absolute_max_ototox(self, value):
-        self.absolute_max_ototox = value
-
-    @property
-    def absolute_min_ototox(self):
-        return self.absolute_min_ototox
-
-    @absolute_min_ototox.setter
-    def absolute_min_ototox(self, value):
-        self.absolute_min_ototox = value
-
-    @property
-    def channel_main_ototox(self):
-        return self.channel_main_ototox
-
-    @channel_main_ototox.setter
-    def channel_main_ototox(self, value):
-        self.channel_main_ototox = value
-
-    @property
-    def channel_main_infection(self):
-        return self.channel_main_infection
-
-    @channel_main_infection.setter
-    def channel_main_infection(self, value):
-        self.channel_main_infection = value
-
-    @property
-    def channel_subtr_ototox(self):
-        return self.channel_subtr_ototox
-
-    @channel_subtr_ototox.setter
-    def channel_subtr_ototox(self, value):
-        self.channel_subtr_ototox = value
-
-    @property
-    def channel_subtr_infection(self):
-        return self.channel_subtr_infection
-
-    @channel_subtr_infection.setter
-    def channel_subtr_infection(self, value):
-        self.channel_subtr_infection = value
-
-    @property
-    def filename_replacement_delimiter(self):
-        return self.filename_replacement_delimiter
-
-    @filename_replacement_delimiter.setter
-    def filename_replacement_delimiter(self, value):
-        self.filename_replacement_delimiter = value
-
-    @property
-    def filename_replacement_brightfield_infection(self):
-        return self.filename_replacement_brightfield_infection
-
-    @filename_replacement_brightfield_infection.setter
-    def filename_replacement_brightfield_infection(self, value):
-        self.filename_replacement_brightfield_infection = value
-
-    @property
-    def filename_replacement_brightfield_ototox(self):
-        return self.filename_replacement_brightfield_ototox
-
-    @filename_replacement_brightfield_ototox.setter
-    def filename_replacement_brightfield_ototox(self, value):
-        self.filename_replacement_brightfield_ototox = value
-
-    @property
-    def filename_replacement_mask_infection(self):
-        return self.filename_replacement_mask_infection
-
-    @filename_replacement_mask_infection.setter
-    def filename_replacement_mask_infection(self, value):
-        self.filename_replacement_mask_infection = value
-
-    @property
-    def filename_replacement_mask_ototox(self):
-        return self.filename_replacement_mask_ototox
-
-    @filename_replacement_mask_ototox.setter
-    def filename_replacement_mask_ototox(self, value):
-        self.filename_replacement_mask_ototox = value
-
-    @property
-    def filename_replacement_subtr_infection(self):
-        return self.filename_replacement_subtr_infection
-
-    @filename_replacement_subtr_infection.setter
-    def filename_replacement_subtr_infection(self, value):
-        self.filename_replacement_subtr_infection = value
-
-    @property
-    def filename_replacement_subtr_ototox(self):
-        return self.filename_replacement_subtr_ototox
-
-    @filename_replacement_subtr_ototox.setter
-    def filename_replacement_subtr_ototox(self, value):
-        self.filename_replacement_subtr_ototox = value
-
-    @property
-    def log_dir(self):
-        return self.log_dir
-
-    @log_dir.setter
-    def log_dir(self, value):
-        self.log_dir = value
+    _CONFIGURATION["absolute_max_infection"] = parsed_config[_CONFIG_SECTION][
+        "absolute_max_infection"
+    ]
+    _CONFIGURATION["absolute_min_infection"] = parsed_config[_CONFIG_SECTION][
+        "absolute_min_infection"
+    ]
+    _CONFIGURATION["absolute_max_ototox"] = parsed_config[_CONFIG_SECTION][
+        "absolute_max_ototox"
+    ]
+    _CONFIGURATION["absolute_min_ototox"] = parsed_config[_CONFIG_SECTION][
+        "absolute_min_ototox"
+    ]
+    _CONFIGURATION["channel_main_ototox"] = parsed_config[_CONFIG_SECTION][
+        "channel_main_ototox"
+    ]
+    _CONFIGURATION["channel_main_infection"] = parsed_config[_CONFIG_SECTION][
+        "channel_main_infection"
+    ]
+    _CONFIGURATION["channel_subtr_ototox"] = parsed_config[_CONFIG_SECTION][
+        "channel_subtr_ototox"
+    ]
+    _CONFIGURATION["channel_subtr_infection"] = parsed_config[_CONFIG_SECTION][
+        "channel_subtr_infection"
+    ]
+    _CONFIGURATION["filename_replacement_delimiter"] = parsed_config[_CONFIG_SECTION][
+        "filename_replacement_delimiter"
+    ]
+    _CONFIGURATION["filename_replacement_brightfield_infection"] = parsed_config[
+        _CONFIG_SECTION
+    ]["filename_replacement_brightfield_infection"]
+    _CONFIGURATION["filename_replacement_brightfield_ototox"] = parsed_config[
+        _CONFIG_SECTION
+    ]["filename_replacement_brightfield_ototox"]
+    _CONFIGURATION["filename_replacement_mask_infection"] = parsed_config[
+        _CONFIG_SECTION
+    ]["filename_replacement_mask_infection"]
+    _CONFIGURATION["filename_replacement_mask_ototox"] = parsed_config[_CONFIG_SECTION][
+        "filename_replacement_mask_ototox"
+    ]
+    _CONFIGURATION["filename_replacement_subtr_infection"] = parsed_config[
+        _CONFIG_SECTION
+    ]["filename_replacement_subtr_infection"]
+    _CONFIGURATION["filename_replacement_subtr_ototox"] = parsed_config[
+        _CONFIG_SECTION
+    ]["filename_replacement_subtr_ototox"]
+    _CONFIGURATION["log_dir"] = parsed_config[_CONFIG_SECTION]["log_dir"]

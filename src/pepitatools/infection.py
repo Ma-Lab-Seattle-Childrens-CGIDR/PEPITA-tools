@@ -1,47 +1,47 @@
-from numpy.distutils.misc_util import Configuration
-
 # Imports
 # Standard Library Imports
 import json
 import os
 import warnings
 
-
 # External Imports
 import numpy as np
-
 import seaborn as sns
 
 # Local Imports
 from . import absolute, analyze, imageops, pipeline, utils
-from .configuration import Configuration
+from .configuration import get_config_setting
 
-
-LOG_DIR = f'{Configuration().log_dir}/dose_response'
-ABS_MAX = int(Configuration().absolute_max_infection)
-ABS_MIN = int(Configuration().absolute_min_infection)
-
-channel_main_infection = int(Configuration().channel_main_infection)
-channel_subtr_infection = int(Configuration().channel_subtr_infection)
-replacement_delim = Configuration().filename_replacement_delimiter
-replacement_brfld = Configuration().filename_replacement_brightfield_infection.split(
-    replacement_delim
-)
-replacement_mask = Configuration().filename_replacement_mask_infection.split(
-    replacement_delim
-)
-replacement_subtr = Configuration().filename_replacement_subtr_infection.split(
-    replacement_delim
-)
+# channel_main_infection = int(get_config_setting("channel_main_infection"))
+# channel_subtr_infection = int(get_config_setting("channel_subtr_infection"))
+# replacement_delim = get_config_setting("filename_replacement_delimiter")
+# replacement_brfld = get_config_setting("filename_replacement_brightfield_infection").split(
+#     replacement_delim
+# )
+# replacement_mask = get_config_setting("filename_replacement_mask_infection").split(
+#     replacement_delim
+# )
+# replacement_subtr = get_config_setting("filename_replacement_subtr_infection").split(
+#     replacement_delim
+# )
 
 
 class InfectionImage(analyze.Image):
-    channel = channel_main_infection
-    channel_subtr = channel_subtr_infection
-    particles = False
-    replacement_brfld = replacement_brfld
-    replacement_mask = replacement_mask
-    replacement_subtr = replacement_subtr
+    def __init__(self, filename, group, debug=0):
+        super().__init__(filename, group, debug)
+        self.channel = int(get_config_setting("channel_main_infection"))
+        self.channel_subtr = int(get_config_setting("channel_subtr_infection"))
+        self.particles = False
+        replacement_delim = get_config_setting("filename_replacement_delimiter")
+        self.replacement_brfld = get_config_setting(
+            "filename_replacement_brightfield_infection"
+        ).split(replacement_delim)
+        self.replacement_mask = get_config_setting(
+            "filename_replacement_mask_infection"
+        ).split(replacement_delim)
+        self.replacement_subtr = get_config_setting(
+            "filename_replacement_subtr_infection"
+        ).split(replacement_delim)
 
     def get_raw_value(self, threshold=0.02):
         if self.value is None:
@@ -63,17 +63,23 @@ def main(
     cap=-1,
     chartfile=None,
     checkerboard=False,
-    conversions=[],
+    conversions=None,
     debug=0,
     platefile=None,
-    plate_control=["B"],
+    plate_control=None,
     plate_info=None,
-    plate_positive_control=[],
+    plate_positive_control=None,
     treatment_platefile=None,
     absolute_chart=False,
     silent=False,
     talk=False,
 ):
+    if conversions is None:
+        conversions = []
+    if plate_control is None:
+        plate_control = ["B"]
+    if plate_positive_control is None:
+        plate_positive_control = []
     hashfile = utils.get_inputs_hashfile(
         imagefiles=imagefiles, cap=cap, platefile=platefile, plate_control=plate_control
     )
@@ -106,13 +112,16 @@ def main(
         analyze.chart(log(results), chartfile)
 
     conversions = dict(conversions)
-    drug_conditions = _parse_results(results, conversions)
-    control_drugs = [
-        utils.Cocktail(utils.Dose(control).drug) for control in plate_control
-    ]
-    models = {}
+    # Are these needed?
+    # drug_conditions = _parse_results(results, conversions)
+    # control_drugs = [
+    #     utils.Cocktail(utils.Dose(control).drug) for control in plate_control
+    # ]
+    # models = {}
 
-    results = {utils.Solution(key, conversions): value for key, value in results.items()}
+    results = {
+        utils.Solution(key, conversions): value for key, value in results.items()
+    }
 
     # generate plate schematics
 
@@ -134,8 +143,10 @@ def main(
 
 
 def quantify_infection(
-    imagefiles, cap=-1, debug=0, platefile=None, plate_control=["B"], silent=False
+    imagefiles, cap=-1, debug=0, platefile=None, plate_control=None, silent=False
 ):
+    if plate_control is None:
+        plate_control = ["B"]
     results = {}
 
     schematic = analyze.get_schematic(platefile, len(imagefiles))

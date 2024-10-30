@@ -3,10 +3,11 @@ Module for charting
 """
 # Imports
 # Standard Library Imports
-import sys
 
 # External Imports
 from matplotlib import pyplot as plt
+
+# Local Imports
 
 data1 = [
     [

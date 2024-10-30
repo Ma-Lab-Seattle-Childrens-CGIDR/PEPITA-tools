@@ -1,13 +1,11 @@
 # Imports
 # Standard Library Imports
-import argparse
 import copy
 import json
 import math
 import os
 from pathlib import Path
 import re
-import sys
 from time import time
 import warnings
 
@@ -19,13 +17,11 @@ import seaborn as sns
 
 # Local Imports
 from . import absolute, analyze, dose_response, interactions2, utils
-from .configuration import Configuration
+from .configuration import get_config_setting
 
-LOG_DIR = f'{Configuration().log_dir}/dose_response'
-ABS_MAX = int(Configuration().absolute_max_ototox)
-ABS_MIN = int(Configuration().absolute_min_ototox)
 ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 NUMS = [str(n) for n in range(1, 99)]
+
 
 def adjust_absolute_filename(filename):
     filepath = Path(filename)
@@ -116,7 +112,7 @@ def generate_plate_schematic(
 
     # make the heatmap
 
-    fig = plt.figure(figsize=(12, 6 * plates_count_est), dpi=100)
+    _fig = plt.figure(figsize=(12, 6 * plates_count_est), dpi=100)
 
     ax = sns.heatmap(
         responses,
@@ -148,8 +144,9 @@ def generate_plate_schematic(
 
     plt.title(f"{plate_info} {well_count}-well Plate Schematic{suffix1}")
     uniq_str = str(int(time() * 1000) % 1_620_000_000_000)
+    log_dir = f'{get_config_setting("log_dir")}/dose_response'
     plt.savefig(
-        f"{LOG_DIR}/{plate_info}_{well_count}-well_schematic_heatmap{suffix2}_{uniq_str}.png"
+        f"{log_dir}/{plate_info}_{well_count}-well_schematic_heatmap{suffix2}_{uniq_str}.png"
     )
     plt.clf()
 
@@ -213,12 +210,14 @@ def main(
         results2 = {
             utils.Solution(key, conversions): value for key, value in results2.items()
         }
+        abs_max = int(get_config_setting("absolute_max_ototox"))
+        abs_min = int(get_config_setting("absolute_min_ototox"))
         generate_plate_schematic(
             schematic,
             results2,
             conversions=conversions,
             plate_info=plate_info,
-            scale=(ABS_MIN, ABS_MAX),
+            scale=(abs_min, abs_max),
             well_count=96,
         )
 
@@ -246,7 +245,9 @@ def main(
     ]
     models = {}
 
-    results = {utils.Solution(key, conversions): value for key, value in results.items()}
+    results = {
+        utils.Solution(key, conversions): value for key, value in results.items()
+    }
 
     # positive control
 
@@ -472,5 +473,3 @@ def _parse_results(results, conversions):
         solution = utils.Solution(condition, conversions)
         utils.put_multimap(drug_conditions, solution.get_cocktail(), solution)
     return drug_conditions
-
-

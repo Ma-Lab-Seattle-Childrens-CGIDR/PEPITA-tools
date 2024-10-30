@@ -16,7 +16,7 @@ import numpy as np
 import seaborn as sns
 
 # Local Imports
-from . import absolute, analyze, dose_response, interactions2, utils
+from . import absolute, analyze, dose_response, interactions, utils
 from .configuration import get_config_setting
 
 ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -431,7 +431,7 @@ def main(
                 )
 
             try:
-                interactions2.response_surface(
+                interactions.response_surface(
                     doses_a,
                     responses_all_a,
                     doses_b,

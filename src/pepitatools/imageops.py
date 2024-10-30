@@ -337,10 +337,3 @@ def _get_mask(img, steps, verbose=False, v_file_prefix=""):
         show(img_i, verbose, v_file_prefix=v_file_prefix)
     show(apply_mask(img, img_i), verbose, v_file_prefix=v_file_prefix)
     return img_i
-
-
-def _test():
-    assert _get_bit_depth(np.array([1, 2, 3, 4, 5])) == (np.uint8, 255)
-    assert _get_bit_depth(np.array([1, 2, 3, 4, 255])) == (np.uint8, 255)
-    assert _get_bit_depth(np.array([1, 2, 3, 4, 256])) == (np.uint16, 65_535)
-    assert _get_bit_depth(np.array([1, 2, 3, 4, 65_536])) == (np.int32, 2_147_483_647)

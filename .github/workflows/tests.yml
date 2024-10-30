@@ -4,12 +4,12 @@ on:
     branches:
       - "main"
     tags-ignore:
-      - "v**" # Don't run this on releases, that will be its own workflow
+      - "v*" # Don't run this on releases, that will be its own workflow
   pull_request:
     branches:
       - "main"
     tags-ignore:
-      - "v**" # Don't run this on releases, that will be its own workflow
+      - "v*" # Don't run this on releases, that will be its own workflow
 env:
   UV_SYSTEM_PYTHON: 1
 

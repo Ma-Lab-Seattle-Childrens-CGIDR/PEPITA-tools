@@ -49,7 +49,7 @@ class Model:
                         )
                         sse = sum((self.equation(xs, *popt) - ys) ** 2)
                         fits[sse] = popt
-                    except Exception as _: # Bare except?
+                    except Exception as _:  # Bare except?
                         pass
                 if not fits:
                     self.b, self.c, self.e = None, None, None

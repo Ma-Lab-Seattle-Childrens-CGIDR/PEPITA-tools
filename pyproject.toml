@@ -33,9 +33,6 @@ pepita = "pepitatools.scripts.pepita_cli:pepita"
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-#[tool.setuptools.packages.find]
-#include = ["pepitatools"]
-
 [tool.setuptools.package-data]
 pepitatools = ["data/*"]
 

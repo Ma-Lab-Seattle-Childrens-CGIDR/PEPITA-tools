@@ -1075,11 +1075,16 @@ def plot_func(
         plt.clf()
 
 
-def _get_model(filename, debug=1):
+def _get_model(filename, debug=1, opened: bool = False):
     xs, ys = [], []
 
-    with open(filename, encoding="utf8", newline="") as f:
-        for x, y in csv.reader(f, delimiter="\t"):
+    if not opened:
+        with open(filename, encoding="utf8", newline="") as f:
+            for x, y in csv.reader(f, delimiter="\t"):
+                xs.append(utils.Solution(x))
+                ys.append(float(y))
+    else:
+        for x, y in csv.reader(filename, delimiter="\t"):
             xs.append(utils.Solution(x))
             ys.append(float(y))
 
@@ -1092,7 +1097,9 @@ def _get_model(filename, debug=1):
 def _get_neo_model(debug=1):
     global _neo_model
     if _neo_model is None:
-        with importlib.resources.path("pepitatools.data", "neo_data.csv") as data_file:
-            _neo_model = _get_model(data_file, debug)
+        with importlib.resources.open_text(
+            "pepitatools.data", "neo_data.csv"
+        ) as data_file:
+            _neo_model = _get_model(data_file, debug, opened=True)
         # _neo_model = _get_model(os.path.join(utils.get_here(), 'examples/neo_data.csv'), debug)
     return _neo_model

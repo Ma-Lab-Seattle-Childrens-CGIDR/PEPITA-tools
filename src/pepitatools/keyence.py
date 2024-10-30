@@ -22,19 +22,19 @@ LAYOUT_DEFAULT = [letter for letter in COLUMNS for _ in range(10)]
 LENS_TABLE = "keyence_BZX800_lenses.csv"
 LENSES = {}
 
-with importlib.resources.path(
+with importlib.resources.open_text(
     "pepitatools.data", "keyence_BZX800_lenses.csv"
-) as data_file:
-    with open(data_file, encoding="utf8", newline="", mode="r") as f:
-        reader = csv.reader(f, delimiter="\t")
-        next(reader, None)  # Skip the header
+) as f:
+    # with open(data_file, encoding="utf8", newline="", mode="r") as f:
+    reader = csv.reader(f, delimiter="\t")
+    next(reader, None)  # Skip the header
 
-        for name, working_distance, pixel_size, numerical_aperture in reader:
-            LENSES[name] = {
-                "Numerical Aperture": float(numerical_aperture),
-                "Pixel Size": float(pixel_size),
-                "Working Distance": float(working_distance),
-            }
+    for name, working_distance, pixel_size, numerical_aperture in reader:
+        LENSES[name] = {
+            "Numerical Aperture": float(numerical_aperture),
+            "Pixel Size": float(pixel_size),
+            "Working Distance": float(working_distance),
+        }
 
 
 def extract_metadata(filename):

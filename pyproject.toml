@@ -2,8 +2,8 @@
 name = "pepitatools"
 version = "0.1.0"
 description = "Pipeline for quantifying hair cell health in whole-zebrafish images."
-authors = ["Ethan Bustad"]
-maintainers = ["Ethan Bustad", "Braden Griebel"]
+authors = [{name="Ethan Bustad"}]
+maintainers = [{name="Ethan Bustad"}, {name="Braden Griebel"}]
 
 readme = "README.md"
 keywords = ["Zebrafish", "Haircell", "Antibiotic", "Ototoxicity"]

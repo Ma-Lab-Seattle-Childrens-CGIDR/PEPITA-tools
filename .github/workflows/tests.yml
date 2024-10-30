@@ -2,12 +2,12 @@ name: Tests
 on:
   push:
     branches:
-      - "main"
+      - "master"
     tags-ignore:
       - "v*" # Don't run this on releases, that will be its own workflow
   pull_request:
     branches:
-      - "main"
+      - "master"
     tags-ignore:
       - "v*" # Don't run this on releases, that will be its own workflow
 env:

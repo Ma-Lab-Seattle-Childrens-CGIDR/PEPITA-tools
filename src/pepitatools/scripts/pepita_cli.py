@@ -262,17 +262,17 @@ def create_parser():
         dest="config",
         required=False,
         default="./config.ini",
-        help="Path to config file, if not provided will look for config.ini in current"
+        help="Path to config file, if not provided will look for config.ini in current "
         "directory",
     )
-    subparsers = top_parser.add_subparsers(help="subcommand help", required=True)
+    subparsers = top_parser.add_subparsers(help="Subcommands", required=True)
     top_parser.set_defaults(command=None)
     # endregion toplevel parser
 
     # region config-file parser
     # Create the parse for the "config-file" command
     config_file_parser = subparsers.add_parser(
-        "config-file", help="create a default config file"
+        "config-file", help="Create a default config file"
     )
     config_file_parser.add_argument(
         "-d",
@@ -357,7 +357,7 @@ def create_parser():
     # region dose_response parser
     # Create the parser for the dose_response script
     dose_response_parser = subparsers.add_parser(
-        name="dose_response", help="Evaluate the dose response for models in filenames"
+        name="dose_response", help="Evaluate the dose response for different models"
     )
     dose_response_parser.add_argument(
         "filename",

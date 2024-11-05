@@ -21,15 +21,12 @@ import numpy as np
 from pepitatools import (
     analyze,
     absolute,
-    chart,
     dose_response,
     imagej_scripts,
     imageops,
     infection,
     keyence,
     pipeline,
-    simulator,
-    spreadsheet,
     utils,
 )
 from pepitatools.configuration import read_config, get_config_setting
@@ -188,12 +185,6 @@ def imageops_command(args):
         )
 
 
-def chart_command(args):
-    if args.chart_type == "boxplot":
-        # boxplot([int(x) for x in sys.argv[2:]])
-        chart.boxplot()
-
-
 def dose_response_command(args):
     if args.filename is None:
         models = [dose_response._get_neo_model(debug=0)]
@@ -234,14 +225,6 @@ def infection_command(args):
     except analyze.UserError as ue:
         print("Error:", ue)
         sys.exit(1)
-
-
-def simulator_command(args):
-    simulator.main()
-
-
-def spreadsheet_command(args):
-    spreadsheet.make(args.filename)
 
 
 def pipeline_command(args):
@@ -371,15 +354,6 @@ def create_parser():
     imageops_parser.set_defaults(func=imageops_command)
     # endregion keyence
 
-    # region chart parser
-    # Create the parser for the chart subcommand
-    chart_parser = subparsers.add_parser("chart", help="Create a boxplot")
-    chart_parser.add_argument(
-        "chart_type", type=str, help="Desired type of chart e.g boxplot"
-    )
-    chart_parser.set_defaults(func=chart_command)
-    # endregion chart parser
-
     # region dose_response parser
     # Create the parser for the dose_response script
     dose_response_parser = subparsers.add_parser(
@@ -478,23 +452,6 @@ def create_parser():
     infection_parser.set_defaults(func=infection_command)
 
     # endregion infection parser
-
-    # region simulator parser
-    simulator_parser = subparsers.add_parser(
-        "simulator", help="Simulate bliss vs loewe"
-    )
-    simulator_parser.set_defaults(func=simulator_command)
-    # endregion simulator_parser
-
-    # region spreadsheet parser
-    spreadsheet_parser = subparsers.add_parser(
-        "spreadsheet", help="Analyze a file or files and put into a spreadsheet"
-    )
-    spreadsheet_parser.add_argument(
-        "filenames", help="paths (relative or absolute) to files to analyze"
-    )
-    spreadsheet_parser.set_defaults(func=spreadsheet_command)
-    # endregion spreadsheet parser
 
     # region pipeline parser
     pipeline_parser = subparsers.add_parser(

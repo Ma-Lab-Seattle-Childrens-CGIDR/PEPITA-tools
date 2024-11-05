@@ -6,7 +6,6 @@ __version__ = version("PEPITA-tools")
 from . import (
     absolute,
     analyze,
-    chart,
     configuration,
     dose_response,
     imagej_scripts,
@@ -15,16 +14,12 @@ from . import (
     interactions,
     keyence,
     pipeline,
-    rubric,
-    simulator,
-    spreadsheet,
     utils,
 )
 
 __all__ = [
     "absolute",
     "analyze",
-    "chart",
     "configuration",
     "dose_response",
     "imagej_scripts",
@@ -33,8 +28,5 @@ __all__ = [
     "interactions",
     "keyence",
     "pipeline",
-    "rubric",
-    "simulator",
-    "spreadsheet",
     "utils",
 ]

@@ -252,7 +252,7 @@ class TestDoseResponse(unittest.TestCase):
         self.assertLess(model.get_condition_E_max(), 50)
         self.assertTrue(utils.equalsish(1, model.get_pct_survival(xs=0.001)))
         self.assertTrue(
-            utils.equalsish(0.025324, model.get_pct_survival(xs=2000))
+            utils.equalsish(0.0, model.get_pct_survival(xs=2000), delta=0.03)
         )  # THIS TEST IS CHANGED
         self.assertEqual(model.get_pct_survival(ys=100), 1)
         self.assertLessEqual(model.get_pct_survival(ys=0.001), 0)

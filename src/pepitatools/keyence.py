@@ -12,29 +12,47 @@ import xml.etree.ElementTree as element_tree
 # External Imports
 
 # Local Imports
+from pepitatools import configuration
 
 COLUMNS = ["B", "C", "D", "E", "F", "G"]
 ROWS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 LAYOUT_DEFAULT = [letter for letter in COLUMNS for _ in range(10)]
 
+LENSES = None
 
-LENS_TABLE = "keyence_BZX800_lenses.csv"
-LENSES = {}
 
-with importlib.resources.open_text(
-    "pepitatools.data", "keyence_BZX800_lenses.csv"
-) as f:
-    # with open(data_file, encoding="utf8", newline="", mode="r") as f:
-    reader = csv.reader(f, delimiter="\t")
-    next(reader, None)  # Skip the header
+def get_lenses() -> dict[str, dict[str, float]]:
+    """Return the Lenses Configuration"""
+    global LENSES  # Accessing module level variable
+    if LENSES is None or len(LENSES) == 0:  # If LENSES has not been set, try to set it
+        LENSES = {}  # Empty dictionary which will have the values read in
+        keyence_file = configuration.get_config_setting("keyence_lenses_file")
+        if keyence_file is None:  # No keyence file provided in config
+            # No keyence_file set in the config, so read the default example file
+            with importlib.resources.open_text(
+                "pepitatools.data", "keyence_BZX800_lenses.csv"
+            ) as f:
+                # with open(data_file, encoding="utf8", newline="", mode="r") as f:
+                reader = csv.reader(f, delimiter="\t")
+                next(reader, None)  # Skip the header
 
-    for name, working_distance, pixel_size, numerical_aperture in reader:
-        LENSES[name] = {
-            "Numerical Aperture": float(numerical_aperture),
-            "Pixel Size": float(pixel_size),
-            "Working Distance": float(working_distance),
-        }
+                for name, working_distance, pixel_size, numerical_aperture in reader:
+                    LENSES[name] = {
+                        "Numerical Aperture": float(numerical_aperture),
+                        "Pixel Size": float(pixel_size),
+                        "Working Distance": float(working_distance),
+                    }
+    return LENSES
+
+
+def write_example(filename):
+    with importlib.resources.open_text(
+        "pepitatools.data", "keyence_BZX800_lenses.csv"
+    ) as keyence_file:
+        example_keyence = keyence_file.read()
+    with open(filename, "w") as example_file:
+        example_file.write(example_keyence)
 
 
 def extract_metadata(filename):
@@ -91,9 +109,11 @@ def extract_metadata(filename):
     metadata["Lens"] = _getxml(main, "Lens", "LensName")
     metadata["Magnification"] = int(_getxml(main, "Lens", "Magnification")) / 100
 
-    metadata["Numerical Aperture"] = LENSES[metadata["Lens"]]["Numerical Aperture"]
-    metadata["Pixel Size"] = LENSES[metadata["Lens"]]["Pixel Size"]
-    metadata["Working Distance"] = LENSES[metadata["Lens"]]["Working Distance"]
+    metadata["Numerical Aperture"] = get_lenses()[metadata["Lens"]][
+        "Numerical Aperture"
+    ]
+    metadata["Pixel Size"] = get_lenses()[metadata["Lens"]]["Pixel Size"]
+    metadata["Working Distance"] = get_lenses()[metadata["Lens"]]["Working Distance"]
 
     return metadata
 

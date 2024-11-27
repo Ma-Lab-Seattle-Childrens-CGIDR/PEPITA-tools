@@ -29,27 +29,12 @@ from pepitatools import (
     pipeline,
     utils,
 )
-from pepitatools.configuration import read_config, get_config_setting
-
-DEFAULT_CONFIG = """
-[Main]
-absolute_max_infection = 26249
-absolute_min_infection = 431
-absolute_max_ototox = 26249
-absolute_min_ototox = 431
-channel_main_ototox = 1
-channel_main_infection = 0
-channel_subtr_ototox = 0
-channel_subtr_infection = 1
-filename_replacement_delimiter = |
-filename_replacement_brightfield_infection = CH2|CH4
-filename_replacement_brightfield_ototox = CH1|CH4
-filename_replacement_mask_infection = CH2|mask
-filename_replacement_mask_ototox = CH1|mask
-filename_replacement_subtr_infection = CH2|CH1
-filename_replacement_subtr_ototox = CH1|CH2
-log_dir = /path/to/log/dir
-"""
+from pepitatools.configuration import (
+    read_config,
+    get_config_setting,
+    set_config_setting,
+    _DEFAULT_CONFIG_STR,
+)
 
 
 def set_arguments(parser):
@@ -139,14 +124,82 @@ def set_arguments(parser):
     )
 
 
+# region Merge Config and Command Line Options
+def merge_config_cli(args):
+    """Take in command line arguments, and update the configuration based on them"""
+    if args.absolute_max_infection:
+        set_config_setting("absolute_max_infection", args.absolute_max_infection)
+    if args.absolute_min_infection:
+        set_config_setting("absolute_min_infection", args.absolute_min_infection)
+    if args.absolute_max_ototox:
+        set_config_setting("absolute_max_ototox", args.absolute_max_ototox)
+    if args.absolute_min_ototox:
+        set_config_setting("absolute_min_ototox", args.absolute_min_ototox)
+    if args.channel_main_ototox:
+        set_config_setting("channel_main_ototox", args.channel_main_ototox)
+    if args.channel_main_infection:
+        set_config_setting("channel_main_infection", args.channel_main_infection)
+    if args.channel_subtr_ototox:
+        set_config_setting("channel_subtr_ototox", args.channel_subtr_ototox)
+    if args.channel_subtr_infection:
+        set_config_setting("channel_subtr_infection", args.channel_subtr_infection)
+    if args.filename_replacement_delimiter:
+        set_config_setting(
+            "filename_replacement_delimiter", args.filename_replacement_delimiter
+        )
+    if args.filename_replacement_brightfield_infection:
+        set_config_setting(
+            "filename_replacement_brightfield_infection",
+            args.filename_replacement_brightfield_infection,
+        )
+    if args.filename_replacement_brightfield_ototox:
+        set_config_setting(
+            "filename_replacement_brightfield_ototox",
+            args.filename_replacement_brightfield_ototox,
+        )
+    if args.filename_replacement_mask_infection:
+        set_config_setting(
+            "filename_replacement_mask_infection",
+            args.filename_replacement_mask_infection,
+        )
+    if args.filename_replacement_mask_ototox:
+        set_config_setting(
+            "filename_replacement_mask_ototox", args.filename_replacement_mask_ototox
+        )
+    if args.filename_replacement_subtr_infection:
+        set_config_setting(
+            "filename_replacement_subtr_infection",
+            args.filename_replacement_subtr_infection,
+        )
+    if args.filename_replacement_subtr_ototox:
+        set_config_setting(
+            "filename_replacement_subtr_ototox", args.filename_replacement_subtr_ototox
+        )
+    if args.log_dir:
+        set_config_setting("log_dir", args.log_dir)
+    if args.keyence_lenses_file:
+        set_config_setting("keyence_lenses_file", args.keyence_lenses_file)
+
+
+# endregion Merge Config and Command Line Options
+
+
 # region subcommands
 def config_file_command(args):
     if args.directory is None:
         directory = os.getcwd()
     else:
         directory = args.directory
-    with open(f"{str(directory)}/config.ini", "w") as f:
-        f.write(DEFAULT_CONFIG)
+    with open(os.path.join(directory, "config.ini"), "w") as f:
+        f.write(_DEFAULT_CONFIG_STR)
+
+
+def keyence_file_command(args):
+    if args.directory is None:
+        directory = os.getcwd()
+    else:
+        directory = args.directory
+    keyence.write_example(os.path.join(directory, "keyence_lenses.csv"))
 
 
 def absolute_command(args):
@@ -265,6 +318,128 @@ def create_parser():
         help="Path to config file, if not provided will look for config.ini in current "
         "directory",
     )
+
+    # Add arguments which will be suppressed, but which can override the config file
+    top_parser.add_argument(
+        "--absolute_max_infection",
+        dest="absolute_max_infection",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--absolute_min_infection",
+        dest="absolute_min_infection",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--absolute_max_ototox",
+        dest="absolute_max_ototox",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--absolute_min_ototox",
+        dest="absolute_min_ototox",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--channel_main_ototox",
+        dest="channel_main_ototox",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--channel_main_infection",
+        dest="channel_main_infection",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--channel_subtr_ototox",
+        dest="channel_subtr_ototox",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--channel_subtr_infection",
+        dest="channel_subtr_infection",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--filename_replacement_delimiter",
+        dest="filename_replacement_delimiter",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--filename_replacement_brightfield_infection",
+        dest="filename_replacement_brightfield_infection",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--filename_replacement_brightfield_ototox",
+        dest="filename_replacement_brightfield_ototox",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--filename_replacement_mask_infection",
+        dest="filename_replacement_mask_infection",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--filename_replacement_mask_ototox",
+        dest="filename_replacement_mask_ototox",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--filename_replacement_subtr_infection",
+        dest="filename_replacement_subtr_infection",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--filename_replacement_subtr_ototox",
+        dest="filename_replacement_subtr_ototox",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--log_dir",
+        dest="log_dir",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    top_parser.add_argument(
+        "--keyence_lenses_file",
+        dest="keyence_lenses_file",
+        required=False,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+
     subparsers = top_parser.add_subparsers(help="Subcommands", required=True)
     top_parser.set_defaults(command=None)
     # endregion toplevel parser
@@ -282,9 +457,24 @@ def create_parser():
         type=str,
         help="Directory to place default config file, current directory is used if not provided",
     )
-    config_file_parser.set_defaults(func=config_file_command)
-    config_file_parser.set_defaults(command="config-file")
+    config_file_parser.set_defaults(func=config_file_command, command="config-file")
     # endregion config-file parser
+
+    # region keyence-file parser
+    keyence_file_parser = subparsers.add_parser(
+        "keyence-file", help="Create a default keyence lenses file"
+    )
+    keyence_file_parser.add_argument(
+        "-d",
+        "--directory",
+        required=False,
+        default=None,
+        type=str,
+        help="Directory to place default config file, "
+        "current directory is used if not provided",
+    )
+    keyence_file_parser.set_defaults(func=keyence_file_command, command="keyence-file")
+    # endregion keyence-file parser
 
     # region absolute parser
     # Create the parser for the absolute script
@@ -569,9 +759,11 @@ def pepita():
     parser = create_parser()
     # Parse arguments from stdin
     args = parser.parse_args()
-    if args.command != "config-file":
+    if (args.command != "config-file") and (args.command != "keyence-file"):
         # Read the config file
         read_config(args.config)
+        # Replace default config with passed command line arguments
+        merge_config_cli(args)
     # Call the desired subcommand
     args.func(args)
 

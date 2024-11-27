@@ -1,6 +1,6 @@
 [project]
 name = "PEPITA-tools"
-version = "0.1.0"
+version = "0.1.1"
 description = "Pipeline for quantifying hair cell health in whole-zebrafish images."
 authors = [{name="Ethan Bustad"}]
 maintainers = [{name="Ethan Bustad"}, {name="Braden Griebel"}]
